@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Flyer</title>
+    <!-- Use the Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Add Tone.js for music -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    
+    <style>
+        /* Basic reset and styling */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
+            width: 100%;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: #333; /* Dark background for contrast */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Game canvas */
+        canvas {
+            display: block;
+            background-color: #87CEEB; /* Nice sky blue */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+
+        /* Modal for start/game over messages */
+        #message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 10;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* Hide modal by default */
+        #message-box.hidden {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+            pointer-events: none;
+        }
+
+        #message-box h1 {
+            margin: 0 0 1rem 0;
+            color: #333;
+            font-size: 2rem;
+        }
+
+        #message-box p {
+            margin: 0 0 1.5rem 0;
+            color: #555;
+            font-size: 1.1rem;
+        }
+
+        /* Stylish button */
+        #start-button {
+            display: inline-block;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #start-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.5);
+        }
+
+        #start-button:active {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <!-- The game canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Modal for messages -->
+    <div id="message-box">
+        <h1 id="message-title">Sky Flyer</h1>
+        <p id="message-text">Fly your ship and avoid the clouds!</p>
+        <button id="start-button">Start Game</button>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const messageBox = document.getElementById('message-box');
+        const messageTitle = document.getElementById('message-title');
+        const messageText = document.getElementById('message-text');
+        const startButton = document.getElementById('start-button');
+
+        // Game state variables
+        let isPlaying = false;
+        let score = 0;
+        let frameCount = 0;
+        let spawnInterval = 90; // How often to spawn clouds (in frames)
+        let clouds = [];
+        let portal = null; // Portal object
+        let gameLevel = 1; // Game difficulty level
+
+        // Music variables
+        let musicLoop;
+        let synth;
+        let musicInitialized = false;
+
+        // Ship properties
+        const ship = {
+            x: 100,
+            y: 300,
+            size: 50, // Size for drawing and collision
+            emoji: '🚀'
+        };
+
+        // Cloud properties
+        const cloudBase = {
+            size: 60, // Base size
+            emoji: '☁️',
+            minSpeed: 1.5,
+            maxSpeed: 3.5
+        };
+
+        // Portal properties
+        const portalBase = {
+            size: 70,
+            emoji: '🌀',
+            speed: 2
+        };
+
+        // --- Game Utility Functions ---
+
+        /**
+         * Resizes the canvas to fit the window, maintaining aspect ratio.
+         */
+        function resizeCanvas() {
+            // Set a max width and aspect ratio
+            const maxWidth = 1000;
+            const aspect = 16 / 9;
+            
+            let w = window.innerWidth * 0.9;
+            let h = window.innerHeight * 0.9;
+
+            if (w > maxWidth) {
+                w = maxWidth;
+            }
+            
+            // Adjust height based on width to maintain aspect ratio
+            h = w / aspect;
+            
+            // But don't let it be taller than the viewport
+            if (h > window.innerHeight * 0.9) {
+                h = window.innerHeight * 0.9;
+                w = h * aspect; // Recalculate width
+            }
+
+            canvas.width = w;
+            canvas.height = h;
+
+            // Center ship vertically on resize if not playing
+            if (!isPlaying) {
+                ship.y = canvas.height / 2;
+            }
+            // Make sure ship stays in bounds
+            if (ship.y < 0) ship.y = 0;
+            if (ship.y > canvas.height) ship.y = canvas.height;
+
+            // Redraw the "menu" screen
+            if (!isPlaying) {
+                drawMenu();
+            }
+        }
+
+        /**
+         * Spawns a new cloud object.
+         */
+        function spawnCloud() {
+            const size = cloudBase.size + Math.random() * 30 - 15;
+            clouds.push({
+                x: canvas.width + size,
+                y: Math.random() * (canvas.height - size) + size / 2, // Random y-position
+                size: size,
+                speed: Math.random() * (cloudBase.maxSpeed - cloudBase.minSpeed) + cloudBase.minSpeed,
+                emoji: cloudBase.emoji
+            });
+        }
+
+        /**
+         * Draws the initial menu/start screen.
+         */
+        function drawMenu() {
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw ship
+            ctx.font = `${ship.size}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.save();
+            ctx.translate(ship.x, ship.y);
+            ctx.rotate(Math.PI / 2);
+            ctx.fillText(ship.emoji, 0, 0);
+            ctx.restore();
+            
+            // Draw a few floating clouds
+            ctx.font = '80px sans-serif';
+            ctx.fillText(cloudBase.emoji, canvas.width * 0.4, canvas.height * 0.3);
+            ctx.font = '60px sans-serif';
+            ctx.fillText(cloudBase.emoji, canvas.width * 0.7, canvas.height * 0.6);
+        }
+
+        /**
+         * Checks for collision between ship and another game object.
+         * Uses distance-based check (centers of two circles).
+         */
+        function checkShipCollision(obj) {
+            if (!obj) return false; // Guard against null objects
+            const shipRadius = ship.size / 2.5; // Tighter hitbox
+            const objRadius = obj.size / 2.5; // Tighter hitbox
+            
+            const dx = obj.x - ship.x;
+            const dy = obj.y - ship.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            return distance < shipRadius + objRadius;
+        }
+
+        /**
+         * Shows the message modal.
+         */
+        function showMessage(title, text, buttonText) {
+            messageTitle.textContent = title;
+            messageText.textContent = text;
+            startButton.textContent = buttonText;
+            messageBox.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the message modal.
+         */
+        function hideMessage() {
+            messageBox.classList.add('hidden');
+        }
+
+        /**
+         * Initializes the background music.
+         */
+        function initMusic() {
+            if (musicInitialized) return; // Only init once
+
+            try {
+                synth = new Tone.Synth({
+                    oscillator: { type: 'pulse', width: 0.5 },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.2 }
+                }).toDestination();
+                
+                // A simple, airy melody
+                const notes = ['C4', 'E4', 'G4', 'E4', 'A4', 'G4', 'E4', 'G4'];
+                let noteIndex = 0;
+
+                musicLoop = new Tone.Loop(time => {
+                    if (synth) { // Check if synth exists
+                        const note = notes[noteIndex % notes.length];
+                        synth.triggerAttackRelease(note, '8n', time);
+                        noteIndex++;
+                    }
+                }, '4n'); // Play a note every quarter note
+
+                Tone.Transport.bpm.value = 120;
+                musicInitialized = true;
+            } catch (e) {
+                console.error("Could not initialize music. Game will run without it.", e);
+                // Game will still run, just without music
+            }
+        }
+
+        /**
+         * Increases game difficulty.
+         */
+        function levelUp() {
+            gameLevel++;
+            cloudBase.minSpeed *= 1.3; // Faster clouds
+            cloudBase.maxSpeed *= 1.3;
+            spawnInterval = Math.max(30, spawnInterval - 15); // Faster spawning
+
+            if (musicInitialized) {
+                Tone.Transport.bpm.value *= 1.1; // Faster music
+            }
+        }
+
+        // --- Game Core Functions ---
+
+        /**
+         * Initializes or resets the game state.
+         */
+        async function startGame() {
+            // Start audio context on user gesture
+            // This is required by modern browsers
+            try {
+                if (!musicInitialized) {
+                    initMusic();
+                }
+                
+                if (musicInitialized && Tone.context.state !== 'running') {
+                    await Tone.start();
+                    console.log("Audio context started");
+                }
+            } catch (e) {
+                console.error("Audio context could not be started:", e);
+                musicInitialized = false; // Disable music if context fails
+            }
+
+
+            isPlaying = true;
+            score = 0;
+            frameCount = 0;
+            clouds = [];
+            portal = null; // Reset portal
+            gameLevel = 1; // Reset level
+            ship.y = canvas.height / 2;
+            hideMessage();
+
+            // Reset game speed settings
+            cloudBase.minSpeed = 1.5;
+            cloudBase.maxSpeed = 3.5;
+            spawnInterval = 90;
+
+            // Start music & reset tempo
+            if (musicInitialized && musicLoop) {
+                Tone.Transport.bpm.value = 120; // Reset tempo
+                if (Tone.Transport.state !== 'started') {
+                    try {
+                        Tone.Transport.start();
+                        musicLoop.start(0);
+                    } catch (e) {
+                        console.error("Could not start music transport:", e);
+                    }
+                }
+            }
+
+            gameLoop(); // Start the loop
+        }
+
+        /**
+         * Ends the game and shows the game over message.
+         */
+        function gameOver() {
+            isPlaying = false;
+            
+            // Stop music
+            if (musicInitialized && musicLoop) {
+                musicLoop.stop();
+                Tone.Transport.stop();
+            }
+
+            showMessage('Game Over!', `Your final score: ${score}`, 'Try Again');
+        }
+
+        /**
+         * Updates game logic for one frame.
+         */
+        function update() {
+            frameCount++;
+            
+            // Increment score every second (assuming ~60fps)
+            if (frameCount % 60 === 0) {
+                score++;
+            }
+
+            // Check for level-up portal spawn
+            // Spawns at 100, 200, 300 etc. if portal isn't already active
+            if (score > 0 && score % 100 === 0 && gameLevel === (score / 100) && !portal) {
+                portal = {
+                    x: canvas.width + portalBase.size,
+                    y: Math.random() * (canvas.height - portalBase.size) + portalBase.size / 2,
+                    size: portalBase.size,
+                    emoji: portalBase.emoji,
+                    speed: portalBase.speed
+                };
+            }
+            
+            // Update and remove clouds
+            for (let i = clouds.length - 1; i >= 0; i--) {
+                const c = clouds[i];
+                c.x -= c.speed;
+                
+                // Remove if off-screen
+                if (c.x < -c.size) {
+                    clouds.splice(i, 1);
+                }
+                
+                // Check for collision
+                if (checkShipCollision(c)) { // Use new collision function
+                    gameOver();
+                    return; // Stop update loop on death
+                }
+            }
+
+            // Update portal
+            if (portal) {
+                portal.x -= portal.speed;
+
+                // Check for portal collision
+                if (checkShipCollision(portal)) {
+                    levelUp();
+                    portal = null; // Consume portal
+                } 
+                // Remove if off-screen
+                else if (portal.x < -portal.size) {
+                    portal = null;
+                    // If user misses portal, increment gameLevel anyway so it doesn't
+                    // try to spawn again for this level.
+                    // Use Math.floor in case score is 101, 102 etc.
+                    if (gameLevel === Math.floor(score / 100)) { 
+                        gameLevel++; 
+                    }
+                }
+            }
+
+            // Spawn new clouds
+            if (frameCount % spawnInterval === 0) {
+                spawnCloud();
+                // Old difficulty increase removed, now handled by levelUp()
+            }
+        }
+
+        /**
+         * Draws the game state to the canvas.
+         */
+        function draw() {
+            // Clear canvas (draw sky)
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Set up font for emojis
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Draw clouds
+            for (const c of clouds) {
+                ctx.font = `${c.size}px sans-serif`;
+                ctx.fillText(c.emoji, c.x, c.y);
+            }
+            
+            // Draw portal
+            if (portal) {
+                ctx.font = `${portal.size}px sans-serif`;
+                ctx.fillText(portal.emoji, portal.x, portal.y);
+            }
+
+            // Draw ship
+            ctx.font = `${ship.size}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.save();
+            ctx.translate(ship.x, ship.y);
+            ctx.rotate(Math.PI / 2);
+            ctx.fillText(ship.emoji, 0, 0);
+            ctx.restore();
+            
+            // Draw score
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.font = '700 24px Inter';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(`Score: ${score}`, 15, 15);
+        }
+
+        /**
+         * The main game loop.
+         */
+        function gameLoop() {
+            if (!isPlaying) return; // Stop the loop if game ended
+            
+            update();
+            draw();
+            
+            requestAnimationFrame(gameLoop); // Request next frame
+        }
+
+        // --- Event Listeners ---
+
+        /**
+         * Handles mouse movement to control the ship.
+         */
+        function onMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            ship.y = e.clientY - rect.top;
+            
+            // Clamp ship position within canvas bounds
+            const halfShip = ship.size / 2;
+            if (ship.y < halfShip) ship.y = halfShip;
+            if (ship.y > canvas.height - halfShip) ship.y = canvas.height - halfShip;
+        }
+
+        /**
+         * Handles touch movement (for mobile).
+         */
+        function onTouchMove(e) {
+            e.preventDefault(); // Prevent scrolling
+            if (e.touches.length > 0) {
+                const rect = canvas.getBoundingClientRect();
+                ship.y = e.touches[0].clientY - rect.top;
+
+                // Clamp ship position
+                const halfShip = ship.size / 2;
+                if (ship.y < halfShip) ship.y = halfShip;
+                if (ship.y > canvas.height - halfShip) ship.y = canvas.height - halfShip;
+            }
+        }
+        
+        // Add event listeners
+        window.addEventListener('resize', resizeCanvas);
+        canvas.addEventListener('mousemove', onMouseMove);
+        canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+        startButton.addEventListener('click', startGame);
+
+        // --- Initial Setup ---
+        
+        // Set initial canvas size and draw menu
+        resizeCanvas();
+        
+    </script>
+</body>
+</html>

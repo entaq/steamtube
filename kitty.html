@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Kitty Spike Jump</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Tone.js for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.32/Tone.js"></script>
+    <style>
+        /* Use Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Hide scrollbars */
+        }
+
+        /* Main game container */
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            background-color: #87CEEB; /* Sky blue */
+            overflow: hidden;
+            position: relative;
+            border-radius: 0.75rem;
+            border: 4px solid #333;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        /* The game world where elements move */
+        #game-world {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* The ground */
+        #ground {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #228B22; /* Forest green */
+            border-top: 4px dashed #3A5F0B;
+        }
+
+        /* --- Hello Kitty CSS Art --- */
+        #hello-kitty {
+            position: absolute;
+            bottom: 50px; /* Stands on the ground */
+            left: 50px;
+            width: 60px;
+            height: 50px;
+            background: white;
+            border: 2px solid #333;
+            /* Head shape */
+            border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+            transition: bottom 0.1s;
+        }
+
+        /* Ears */
+        #hello-kitty::before,
+        #hello-kitty::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 2px solid #333;
+        }
+        /* Left ear */
+        #hello-kitty::before {
+            left: 4px;
+            transform: rotate(-30deg);
+            border-radius: 50% 50% 0 0;
+        }
+        /* Right ear */
+        #hello-kitty::after {
+            right: 4px;
+            transform: rotate(30deg);
+            border-radius: 50% 50% 0 0;
+        }
+
+        /* Eyes */
+        .eye {
+            position: absolute;
+            width: 5px;
+            height: 8px;
+            background: #333;
+            border-radius: 50%;
+            top: 20px;
+        }
+        .eye.left { left: 18px; }
+        .eye.right { right: 18px; }
+
+        /* Nose */
+        .nose {
+            position: absolute;
+            width: 8px;
+            height: 6px;
+            background: #FFD700; /* Gold yellow */
+            border: 1px solid #333;
+            border-radius: 50%;
+            top: 26px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Whiskers */
+        .whisker {
+            position: absolute;
+            width: 18px;
+            height: 1px;
+            background: #333;
+            top: 28px;
+        }
+        .whisker.l1 { left: -8px; transform: rotate(15deg); }
+        .whisker.l2 { left: -8px; top: 33px; }
+        .whisker.l3 { left: -8px; top: 38px; transform: rotate(-15deg); }
+        .whisker.r1 { right: -8px; transform: rotate(-15deg); }
+        .whisker.r2 { right: -8px; top: 33px; }
+        .whisker.r3 { right: -8px; top: 38px; transform: rotate(15deg); }
+        
+        /* Bow */
+        .bow {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #FF69B4; /* Hot pink */
+            border: 2px solid #333;
+            border-radius: 50%;
+            top: 0px;
+            left: 0px;
+            transform: rotate(-30deg);
+        }
+        .bow::before, .bow::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #FF69B4;
+            border: 2px solid #333;
+            border-radius: 50%;
+        }
+        .bow::before { left: -8px; }
+        .bow::after { top: -8px; }
+        /* --- End Hello Kitty CSS --- */
+
+        /* Jump animation */
+        .jump {
+            animation: jump 0.6s linear;
+        }
+        @keyframes jump {
+            0% { bottom: 50px; }
+            50% { bottom: 200px; } /* Jump height */
+            100% { bottom: 50px; }
+        }
+
+        /* Spike obstacle */
+        .spike {
+            position: absolute;
+            bottom: 50px; /* On the ground */
+            width: 0;
+            height: 0;
+            /* Creates a triangle */
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 30px solid #696969; /* Dim gray */
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div id="game-container">
+        <div id="game-world">
+            <!-- Hello Kitty character -->
+            <div id="hello-kitty">
+                <div class="eye left"></div>
+                <div class="eye right"></div>
+                <div class="nose"></div>
+                <div class="whisker l1"></div>
+                <div class="whisker l2"></div>
+                <div class="whisker l3"></div>
+                <div class="whisker r1"></div>
+                <div class="whisker r2"></div>
+                <div class="whisker r3"></div>
+                <div class="bow"></div>
+            </div>
+            
+            <!-- Ground -->
+            <div id="ground"></div>
+
+            <!-- Score Display -->
+            <div id="score-display" class="absolute top-4 right-5 text-3xl font-bold text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+                0
+            </div>
+
+            <!-- Start Screen Overlay -->
+            <div id="start-screen" class="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center cursor-pointer backdrop-blur-sm z-10">
+                <h1 class="text-5xl font-bold text-white mb-4" style="text-shadow: 2px 2px #FF69B4;">Hello Kitty Jump</h1>
+                <p class="text-xl text-white">Tap or Press Space to Start</p>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div id="game-over-screen" class="absolute inset-0 bg-black bg-opacity-50 flex-col items-center justify-center cursor-pointer backdrop-blur-sm z-10" style="display: none;">
+                <h2 class="text-4xl font-bold text-white mb-3" style="text-shadow: 2px 2px #FF69B4;">Game Over!</h2>
+                <p class="text-2xl text-white mb-4">Final Score: <span id="final-score">0</span></p>
+                <button id="restart-button" class="px-6 py-3 bg-pink-500 text-white font-bold rounded-lg shadow-lg transform transition hover:scale-105 active:scale-95">
+                    Restart
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const gameContainer = document.getElementById('game-container');
+        const gameWorld = document.getElementById('game-world');
+        const helloKitty = document.getElementById('hello-kitty');
+        const scoreDisplay = document.getElementById('score-display');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const restartButton = document.getElementById('restart-button');
+        const finalScoreDisplay = document.getElementById('final-score');
+
+        // Game State
+        let isJumping = false;
+        let score = 0;
+        let gameStarted = false;
+        let gameLoopInterval = null;
+        let obstacleInterval = null;
+        let scoreInterval = null; // This line will be removed
+        let currentObstacles = [];
+        const gameSpeed = 5; // Pixels to move obstacles per frame
+        const obstacleSpawnTime = 2000; // Milliseconds
+        const jumpDuration = 600; // Milliseconds (must match CSS)
+
+        // --- Sound Effects with Tone.js ---
+        // Create synths
+        const jumpSynth = new Tone.Synth({
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 }
+        }).toDestination();
+        
+        const gameOverSynth = new Tone.Synth({
+             oscillator: { type: 'square' },
+             envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }
+        }).toDestination();
+
+        function playJumpSound() {
+            // A quick, rising 'boop'
+            jumpSynth.triggerAttackRelease("C5", "8n", Tone.now());
+            jumpSynth.triggerAttackRelease("E5", "8n", Tone.now() + 0.05);
+        }
+
+        function playGameOverSound() {
+            // A descending 'womp-womp'
+            gameOverSynth.triggerAttackRelease("G3", "8n", Tone.now());
+            gameOverSynth.triggerAttackRelease("E3", "8n", Tone.now() + 0.1);
+            gameOverSynth.triggerAttackRelease("C3", "4n", Tone.now() + 0.2);
+        }
+        // --- End Sound Effects ---
+
+        // Event Listeners
+        startScreen.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+        
+        // Handle both keydown (Space) and touch for jumping
+        document.addEventListener('keydown', handleJump);
+        document.addEventListener('touchstart', handleJump);
+
+        function handleJump(e) {
+            // Only jump if game is started
+            if (!gameStarted) return;
+            
+            // Check for spacebar or any touch
+            if (e.type === 'keydown' && e.code !== 'Space') {
+                return;
+            }
+            
+            // Prevent double jumping
+            if (!isJumping) {
+                isJumping = true;
+                helloKitty.classList.add('jump');
+                playJumpSound();
+
+                // Remove jump class after animation finishes
+                setTimeout(() => {
+                    isJumping = false;
+                    helloKitty.classList.remove('jump');
+                }, jumpDuration);
+            }
+        }
+
+        function startGame() {
+            // Start the audio context (required by browsers)
+            Tone.start();
+
+            // Reset game state
+            gameStarted = true;
+            isJumping = false;
+            score = 0;
+            scoreDisplay.textContent = score;
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+
+            // Clear any existing intervals
+            clearInterval(gameLoopInterval);
+        clearInterval(obstacleInterval);
+        clearInterval(scoreInterval); // This line will be removed
+
+        // Clear old obstacles
+            currentObstacles.forEach(obs => obs.remove());
+            currentObstacles = [];
+
+            // Start new game loops
+        obstacleInterval = setInterval(createObstacle, obstacleSpawnTime);
+        gameLoopInterval = setInterval(gameLoop, 20); // ~50 FPS
+        scoreInterval = setInterval(updateScore, 100); // This line will be removed
+    }
+
+    function updateScore() { // This entire function will be removed
+        if (!gameStarted) return;
+        score++;
+        scoreDisplay.textContent = score;
+    }
+
+    function createObstacle() {
+        if (!gameStarted) return;
+
+        const spike = document.createElement('div'); // This line is changed
+        spike.classList.add('spike');
+        spike.style.right = '-30px'; // Start off-screen
+        spike.dataset.passed = 'false'; // For new score logic
+        gameWorld.appendChild(spike);
+        currentObstacles.push(spike);
+
+        if (score >= 10) {
+            // If score is 10 or more, spawn a second spike right next to the first
+            const spike2 = document.createElement('div');
+            spike2.classList.add('spike');
+            // A spike is 30px wide. Place it 30px further off-screen
+            spike2.style.right = '-60px'; 
+            spike2.dataset.passed = 'false'; // For new score logic
+            gameWorld.appendChild(spike2);
+            currentObstacles.push(spike2);
+        }
+    }
+
+    function gameLoop() {
+            if (!gameStarted) return;
+
+            // Get Hello Kitty's current position
+            let kittyRect = helloKitty.getBoundingClientRect();
+
+            // Move and check all obstacles
+            for (let i = currentObstacles.length - 1; i >= 0; i--) {
+                let spike = currentObstacles[i];
+                
+                // Move spike to the left
+                let currentRight = parseFloat(spike.style.right);
+                spike.style.right = (currentRight + gameSpeed) + 'px';
+
+                // Check for collision
+                let spikeRect = spike.getBoundingClientRect();
+                
+                // Simple collision detection
+                // Check if horizontally overlapping
+                let horizontalOverlap = kittyRect.right > spikeRect.left + 10 && 
+                                      kittyRect.left < spikeRect.right - 10;
+                
+                // Check if vertically overlapping (i.e., not jumping over it)
+                let verticalOverlap = kittyRect.bottom > spikeRect.top + 5; 
+
+                if (horizontalOverlap && verticalOverlap) {
+                    endGame();
+                    return; // Stop the loop
+                }
+
+                // --- NEW SCORE LOGIC ---
+                // Check if spike has passed Hello Kitty
+                if (spike.dataset.passed === 'false' && spikeRect.right < kittyRect.left) {
+                    spike.dataset.passed = 'true';
+                    score++;
+                    scoreDisplay.textContent = score;
+                }
+                // --- END NEW SCORE LOGIC ---
+
+                // Remove obstacle if it's off-screen
+                if (currentRight > gameContainer.clientWidth) {
+                    spike.remove();
+                    currentObstacles.splice(i, 1);
+                }
+            }
+        }
+
+        function endGame() {
+            gameStarted = false;
+            playGameOverSound();
+
+            // Stop all game loops
+            clearInterval(gameLoopInterval);
+            clearInterval(obstacleInterval);
+            clearInterval(scoreInterval);
+
+            // Show game over screen
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'flex';
+        }
+
+    </script>
+</body>
+</html>
