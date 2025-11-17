@@ -3,743 +3,383 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Croc Munch</title>
-    
-    <!-- Load Tone.js for sound effects --><script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
-    
-    <!-- Load a fun, game-like font --><link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
-    
+    <title>SteamTube - Industrial Era Gaming Platform</title>
     <style>
-        /* Basic page setup */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Bangers', cursive;
-            background-color: #2c3e50; /* Dark swampy blue */
-            color: #ecf0f1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1410 0%, #2d2419 50%, #1a1410 100%);
+            color: #e8dcc8;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
+        }
+
+        /* Animated Background Gears */
+        .gear-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            opacity: 0.08;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .gear {
+            position: absolute;
+            border: 3px solid #c9a961;
+            border-radius: 50%;
+            animation: rotate 20s linear infinite;
+        }
+
+        .gear-1 {
+            width: 150px;
+            height: 150px;
+            top: 10%;
+            left: 5%;
+            animation-duration: 15s;
+        }
+
+        .gear-2 {
+            width: 200px;
+            height: 200px;
+            top: 60%;
+            right: 10%;
+            animation-duration: 25s;
+            animation-direction: reverse;
+        }
+
+        .gear-3 {
+            width: 100px;
+            height: 100px;
+            bottom: 15%;
+            left: 15%;
+            animation-duration: 18s;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Steam Effect */
+        .steam {
+            position: fixed;
+            bottom: -50px;
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(to top, rgba(255, 255, 255, 0.1), transparent);
+            animation: rise 8s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes rise {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
+            50% { transform: translateY(-100px) scale(1.2); opacity: 0.3; }
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            z-index: 100;
+            padding: 2rem 5%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(26, 20, 16, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #c9a961;
+            box-shadow: 0 4px 20px rgba(201, 169, 97, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #c9a961;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #c9a961, #8b7355);
+            border-radius: 10px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            overflow: hidden; /* Prevent scrolling */
+            font-size: 2rem;
+            box-shadow: 0 4px 15px rgba(201, 169, 97, 0.4);
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        h1 {
-            font-size: 4rem;
-            color: #27ae60; /* Crocodile green */
-            text-shadow: 3px 3px #000;
-            margin: 0.5em 0;
-            letter-spacing: 2px;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
-        /* Game container */
-        #gameContainer {
+        /* Main Content */
+        main {
+            flex: 1;
+            position: relative;
+            z-index: 10;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            border: 8px solid #1a5276;
+            justify-content: center;
+            padding: 4rem 5%;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 3.5rem;
+            margin-bottom: 4rem;
+            background: linear-gradient(135deg, #c9a961, #f4d9a0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 3rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .game-card {
+            background: rgba(45, 36, 25, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
             border-radius: 20px;
-            background-color: #3498db; /* Pond blue */
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            padding: 10px;
+            border: 1px solid rgba(201, 169, 97, 0.3);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            animation: fadeInUp 1s ease-out 0.3s backwards;
         }
 
-        /* UI bar for score and time */
-        #uiBar {
-            display: flex;
-            justify-content: space-between;
-            width: 100%; /* Will be set by JS to match canvas */
-            font-size: 2.5rem;
-            padding: 0 20px;
-            box-sizing: border-box; /* Include padding in width */
-            text-shadow: 2px 2px #000;
-            flex-wrap: wrap; /* Allow wrapping for lives */
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(201, 169, 97, 0.1) 0%, transparent 70%);
+            transform: scale(0);
+            transition: transform 0.6s ease;
         }
 
-        /* Game canvas */
-        #gameCanvas {
-            background-color: #4aa3df; /* Lighter pond blue */
-            border-radius: 15px;
-            cursor: none; /* Hide the mouse cursor over the canvas */
-            display: block;
+        .game-card:hover::before {
+            transform: scale(1);
         }
 
-        /* Controls area */
-        #controls {
-            margin-top: 15px;
+        .game-card:hover {
+            transform: translateY(-10px);
+            border-color: #c9a961;
+            box-shadow: 0 15px 40px rgba(201, 169, 97, 0.3);
         }
 
-        /* Game button styling */
-        button {
-            font-family: 'Bangers', cursive;
-            font-size: 1.8rem;
-            padding: 12px 25px;
-            background-color: #e67e22; /* Bug orange */
-            color: white;
+        .game-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+        }
+
+        .game-card h3 {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+            color: #c9a961;
+            position: relative;
+        }
+
+        .game-card p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #d4c5ad;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            font-size: 1.2rem;
             border: none;
-            border-radius: 10px;
+            border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 6px #d35400; /* 3D effect */
-            transition: all 0.1s;
-            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #c9a961, #8b7355);
+            color: #1a1410;
+            box-shadow: 0 8px 25px rgba(201, 169, 97, 0.4);
         }
 
-        button:active {
-            transform: translateY(4px); /* Press down effect */
-            box-shadow: 0 2px #d35400;
-        }
-
-        /* Message box for game over/start */
-        #messageBox {
+        .btn::before {
+            content: '';
             position: absolute;
             top: 50%;
             left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.85);
-            color: white;
-            padding: 30px 40px;
-            border-radius: 15px;
-            font-size: 3rem;
-            text-align: center;
-            display: none; /* Hidden by default */
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(201, 169, 97, 0.6);
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Footer */
+        footer {
+            position: relative;
             z-index: 10;
-            line-height: 1.4;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            padding: 2rem 5%;
+            text-align: center;
+            background: rgba(26, 20, 16, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 2px solid #c9a961;
+        }
+
+        footer p {
+            color: #d4c5ad;
+            font-size: 1.1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2rem;
+            }
+
+            .logo-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 2.5rem;
+            }
+
+            .games-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            main {
+                padding: 2rem 5%;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1410;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #c9a961, #8b7355);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c9a961;
         }
     </style>
 </head>
 <body>
-
-    <h1>Croc Munch!</h1>
-
-    <div id="gameContainer">
-        <!-- UI Bar --><div id="uiBar">
-            <span>Score: <span id="scoreValue">0</span></span>
-            <span>Level: <span id="levelValue">1</span></span>
-            <span>Time: <span id="timeValue">30</span></span>
-            <span>Lives: <span id="livesValue">3</span></span>
-        </div>
-
-        <!-- The game itself --><canvas id="gameCanvas"></canvas>
-
-        <!-- Controls --><div id="controls">
-            <button id="startButton">Start Game</button>
-        </div>
+    <!-- Animated Background -->
+    <div class="gear-background">
+        <div class="gear gear-1"></div>
+        <div class="gear gear-2"></div>
+        <div class="gear gear-3"></div>
     </div>
+    <div class="steam"></div>
 
-    <!-- Message Box (replaces alerts) --><div id="messageBox">
-        <span id="messageText">Time's Up!</span>
-    </div>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon">⚙️</div>
+            <span>SteamTube</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <h1 class="section-title">Featured Games</h1>
+        <div class="games-grid">
+            <div class="game-card">
+                <div class="game-icon">🐊</div>
+                <h3>Croc Munch</h3>
+                <p>Our first game! Navigate the swamps and munch your way to victory in this thrilling adventure.</p>
+                <a href="croc.html" class="btn"><span>Play Now</span></a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 SteamTube. Powered by industrial-era innovation.</p>
+    </footer>
 
     <script>
-        // --- DOM Elements ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const startButton = document.getElementById('startButton');
-        const scoreEl = document.getElementById('scoreValue');
-        const timeEl = document.getElementById('timeValue');
-        const levelEl = document.getElementById('levelValue');
-        const livesEl = document.getElementById('livesValue'); // New element
-        const uiBar = document.getElementById('uiBar');
-        const messageBox = document.getElementById('messageBox');
-        const messageText = document.getElementById('messageText');
-
-        // --- Sound Effect ---
-        // Create a simple synth for the "munch" sound
-        const synth = new Tone.Synth().toDestination();
-        // Create a noise synth for the "danger" sound
-        const dangerSynth = new Tone.NoiseSynth().toDestination();
-        // New: Power-up sound
-        const powerupSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "triangle" }
-        }).toDestination();
-
-
-        // --- Game State ---
-        let score = 0;
-        let timeLeft = 30;
-        let level = 1;
-        let lives = 3; // New lives state
-        let gameRunning = false;
-        let timerId = null;
-        let gameLoopId = null;
-        let dangersActive = true; // To control danger visibility/collisions
-        let isInvincible = false; // New: For invincibility power-up
-        let isHunterMode = false; // New: For eating dangers
-        let powerupTimeouts = []; // New: To manage power-up timers
-
-        // --- Player (Croc) ---
-        const croc = {
-            x: 100,
-            y: 100,
-            size: 60, // Emoji font size
-            speed: 0.1 // Easing speed
-        };
-        let mouse = { x: croc.x, y: croc.y };
-
-        // --- Bugs ---
-        const bugs = [];
-        const bugEmojis = ['🐞', '🐛', '🐜', '🕷️', '🦗', '🦟'];
-        const bugSize = 30; // Emoji font size
-
-        // --- Dangers ---
-        const dangers = [];
-        const dangerEmoji = '🦂';
-        const dangerSize = 40; // A bit bigger to be more threatening
-
-        // --- Power-up ---
-        const powerups = [];
-        const powerupRadius = 20; // Size of the green circle
-
-        // --- Game Setup ---
-        function setCanvasDimensions() {
-            // Set a max size but shrink to fit smaller screens
-            const maxWidth = 800;
-            const maxHeight = 600;
-            
-            // 90% of window width/height, but no larger than max
-            canvas.width = Math.min(maxWidth, window.innerWidth * 0.9);
-            canvas.height = Math.min(maxHeight, window.innerHeight * 0.6);
-            
-            // Make the UI bar match the canvas width
-            uiBar.style.width = `${canvas.width}px`;
-        }
-
-        // Run on load
-        window.onload = setCanvasDimensions;
-
-        // --- Game Management ---
-        function startGame() {
-            score = 0;
-            timeLeft = 30;
-            level = 1;
-            lives = 3; // Reset lives
-            gameRunning = true;
-            dangersActive = true; // Reset danger state
-            clearAllPowerupTimeouts(); // Clear any old timers
-            isInvincible = false;
-            isHunterMode = false;
-            
-            scoreEl.textContent = score;
-            timeEl.textContent = timeLeft;
-            levelEl.textContent = level;
-            livesEl.textContent = lives; // Set lives UI
-            
-            startButton.textContent = 'Restart';
-            hideMessage();
-            
-            // Setup the first level
-            setupLevel(level);
-
-            // Center the croc
-            croc.x = canvas.width / 2;
-            croc.y = canvas.height / 2;
-            mouse.x = croc.x;
-            mouse.y = croc.y;
-
-            // Stop any old timers/loops
-            clearInterval(timerId);
-            cancelAnimationFrame(gameLoopId);
-
-            // Start new timers/loops
-            timerId = setInterval(countdown, 1000);
-            gameLoop();
-        }
-
-        function countdown() {
-            timeLeft--;
-            timeEl.textContent = timeLeft;
-            if (timeLeft <= 0) {
-                endGame("Time's Up!");
-            }
-        }
-
-        function endGame(reason = "Time's Up!") {
-            gameRunning = false;
-            clearInterval(timerId);
-            cancelAnimationFrame(gameLoopId);
-            clearAllPowerupTimeouts(); // Clear all pending power-up timers
-            startButton.textContent = 'Start Game';
-            showMessage(`${reason}<br>Final Score: ${score}<br>Reached Level: ${level}`);
-        }
-
-        // --- Message Box Functions ---
-        function showMessage(text, duration = null) {
-            messageText.innerHTML = text;
-            messageBox.style.display = 'block';
-
-            if (duration) {
-                // Store timeout ID so it can be cleared if needed
-                const timeoutId = setTimeout(hideMessage, duration);
-                powerupTimeouts.push(timeoutId);
-            }
-        }
-
-        function hideMessage() {
-            messageBox.style.display = 'none';
-        }
-
-        // --- Bug Functions ---
-        function createBug() {
-            bugs.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                dx: (Math.random() - 0.5) * 4, // Horizontal speed
-                dy: (Math.random() - 0.5) * 4, // Vertical speed
-                emoji: bugEmojis[Math.floor(Math.random() * bugEmojis.length)],
-                size: bugSize
+        // Add parallax effect to gears
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const gears = document.querySelectorAll('.gear');
+            gears.forEach((gear, index) => {
+                const speed = 0.1 + (index * 0.05);
+                gear.style.transform = `translateY(${scrolled * speed}px) rotate(${scrolled * 0.1}deg)`;
             });
-        }
-
-        // --- Danger Functions ---
-        function createDanger() {
-            dangers.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                dx: (Math.random() - 0.5) * 2, // Slower than bugs
-                dy: (Math.random() - 0.5) * 2, // Slower than bugs
-                emoji: dangerEmoji,
-                size: dangerSize
-            });
-        }
-
-        // --- Power-up Functions ---
-        function createGreenPowerup() { // Renamed from createPowerup
-            powerups.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: powerupRadius,
-                color: '#2ecc71', // Green circle
-                dx: (Math.random() - 0.5) * 1.5, // Slower movement
-                dy: (Math.random() - 0.5) * 1.5,
-                duration: 10000, // 10 seconds
-                type: 'dispel' // Type of power-up
-            });
-        }
-
-        // New function for red power-up
-        function createRedPowerup() {
-            powerups.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: powerupRadius,
-                color: '#e74c3c', // Red circle
-                dx: (Math.random() - 0.5) * 1.5,
-                dy: (Math.random() - 0.5) * 1.5,
-                duration: 5000, // 5 seconds
-                type: 'dispel' // Type of power-up
-            });
-        }
-
-        // New function for yellow power-up
-        function createYellowPowerup() {
-            powerups.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: powerupRadius,
-                color: '#f1c40f', // Yellow circle
-                dx: (Math.random() - 0.5) * 1.5,
-                dy: (Math.random() - 0.5) * 1.5,
-                duration: 10000, // 10 seconds
-                type: 'invincibility' // Type of power-up
-            });
-        }
-
-        // New function for rainbow power-up
-        function createRainbowPowerup() {
-            powerups.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: powerupRadius,
-                color: 'rainbow', // Special flag for drawing
-                dx: (Math.random() - 0.5) * 1.5,
-                dy: (Math.random() - 0.5) * 1.5,
-                duration: 3000, // 3 seconds
-                type: 'hunter' // Type of power-up
-            });
-        }
-
-        // --- New Function: Setup Level ---
-        function setupLevel(levelNum) {
-            // Clear old entities
-            bugs.length = 0;
-            dangers.length = 0;
-            powerups.length = 0; // Clear power-ups for new level
-
-            // Calculate new entity counts
-            const numBugs = 10 + (levelNum - 1) * 2; // Level 1: 10, Level 2: 12, etc.
-            const numDangers = 3 + (levelNum - 1) * 1; // Level 1: 3, Level 2: 4, etc.
-
-            // Create new entities
-            for (let i = 0; i < numBugs; i++) {
-                createBug();
-            }
-            for (let i = 0; i < numDangers; i++) {
-                createDanger();
-            }
-
-            // Create power-up if level 2 or higher
-            if (levelNum >= 2) {
-                createRedPowerup();
-            }
-            // Create power-up if level 3 or higher
-            if (levelNum >= 3) {
-                createGreenPowerup(); // Renamed from createPowerup
-                createRainbowPowerup(); // Add rainbow power-up
-            }
-            // Create power-up if level 4 or higher
-            if (levelNum >= 4) {
-                createYellowPowerup();
-            }
-
-            // Update UI
-            levelEl.textContent = levelNum;
-        }
-
-        // --- New Function: Next Level ---
-        function nextLevel() {
-            level++;
-            timeLeft += 10; // Add 10 second bonus
-            
-            // Update UI
-            timeEl.textContent = timeLeft;
-            
-            // Show level up message for 1.5 seconds
-            showMessage(`Level ${level}!<br>+10 Seconds!`, 1500);
-
-            // Setup the new level
-            setupLevel(level);
-        }
-
-        // --- Entity (Bugs & Dangers & Power-ups) Functions ---
-        // Generic function to update any entity array (bugs, dangers)
-        function updateEntities(entityArray) {
-            for (const entity of entityArray) {
-                entity.x += entity.dx;
-                entity.y += entity.dy;
-
-                // Bounce off walls (use radius for circles, size/2 for emojis)
-                const entityRadius = entity.radius || entity.size / 2;
-                if (entity.x < entityRadius || entity.x > canvas.width - entityRadius) {
-                    entity.dx *= -1;
-                }
-                if (entity.y < entityRadius || entity.y > canvas.height - entityRadius) {
-                    entity.dy *= -1;
-                }
-            }
-        }
-
-        // Generic function to draw any entity array
-        function drawEntities(entityArray) {
-            ctx.textBaseline = 'middle';
-            ctx.textAlign = 'center';
-            for (const entity of entityArray) {
-                if (entity.emoji) { // Draw emoji-based entities
-                    ctx.font = `${entity.size}px Arial`;
-                    ctx.fillText(entity.emoji, entity.x, entity.y);
-                } else if (entity.color) { // Draw circle-based entities (power-ups)
-                    ctx.beginPath();
-                    ctx.arc(entity.x, entity.y, entity.radius, 0, Math.PI * 2);
-
-                    if (entity.color === 'rainbow') {
-                        // Create a rainbow gradient
-                        const gradient = ctx.createRadialGradient(entity.x, entity.y, entity.radius / 2, entity.x, entity.y, entity.radius);
-                        gradient.addColorStop(0, '#ff0000'); // Red
-                        gradient.addColorStop(0.2, '#ff7f00'); // Orange
-                        gradient.addColorStop(0.4, '#ffff00'); // Yellow
-                        gradient.addColorStop(0.6, '#00ff00'); // Green
-                        gradient.addColorStop(0.8, '#0000ff'); // Blue
-                        gradient.addColorStop(1, '#8b00ff'); // Violet
-                        ctx.fillStyle = gradient;
-                    } else {
-                        // Use the solid color
-                        ctx.fillStyle = entity.color;
-                    }
-                    
-                    ctx.fill();
-                    ctx.closePath();
-                }
-            }
-        }
-
-        // --- Player Functions ---
-        function updatePlayer() {
-            // Smoothly move croc towards the mouse (easing)
-            croc.x += (mouse.x - croc.x) * croc.speed;
-            croc.y += (mouse.y - croc.y) * croc.speed;
-        }
-
-        function drawPlayer() {
-            ctx.font = `${croc.size}px Arial`;
-            ctx.textBaseline = 'middle';
-            ctx.textAlign = 'center';
-
-            if (isInvincible) {
-                // Add a yellow glow effect
-                ctx.shadowColor = '#f1c40f'; // Yellow
-                ctx.shadowBlur = 20;
-            } else if (isHunterMode) {
-                // Add a bright white "hunter" glow
-                ctx.shadowColor = '#ffffff'; // White
-                ctx.shadowBlur = 25;
-            }
-
-            ctx.fillText('🐊', croc.x, croc.y);
-
-            // Reset shadows for other drawings
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-        }
-
-        // --- New Function: Clear All Power-up Timeouts ---
-        function clearAllPowerupTimeouts() {
-            powerupTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
-            powerupTimeouts = [];
-        }
-
-        // --- Collision Detection ---
-        function checkCollisions() {
-            const crocRadius = croc.size / 3;
-
-            // Check for bug collisions
-            for (let i = bugs.length - 1; i >= 0; i--) {
-                const bug = bugs[i];
-                const bugRadius = bug.size / 2;
-                const dist = Math.hypot(croc.x - bug.x, croc.y - bug.y);
-
-                if (dist < crocRadius + bugRadius) {
-                    bugs.splice(i, 1); // Remove bug
-                    score++;
-                    scoreEl.textContent = score;
-                    
-                    try { synth.triggerAttackRelease("C4", "8n"); } catch (e) { console.log("Audio context not ready"); }
-
-                    if (bugs.length === 0) {
-                        nextLevel();
-                    }
-                }
-            }
-
-            // Check for power-up collisions
-            for (let i = powerups.length - 1; i >= 0; i--) {
-                const powerup = powerups[i];
-                const dist = Math.hypot(croc.x - powerup.x, croc.y - powerup.y);
-
-                if (dist < crocRadius + powerup.radius) {
-                    const duration = powerup.duration; // Get duration from powerup
-                    const type = powerup.type; // Get type from powerup
-                    powerups.splice(i, 1); // Remove power-up
-
-                    // Trigger the correct power-up effect
-                    if (type === 'dispel') {
-                        activateScorpionDispel(duration); 
-                    } else if (type === 'invincibility') {
-                        activateInvincibility(duration);
-                    } else if (type === 'hunter') {
-                        activateHunterMode(duration);
-                    }
-
-                    try { powerupSynth.triggerAttackRelease(["C5", "E5", "G5"], "8n"); } catch (e) { console.log("Audio context not ready"); }
-
-                    // --- NEW ---
-                    // Spawn a new danger as requested
-                    createDanger();
-                    // --- END NEW ---
-                }
-            }
-        }
-
-        // New: Activate Scorpion Dispel Power-up
-        function activateScorpionDispel(duration) { // Added duration parameter
-            dangersActive = false; // Make dangers inactive
-            showMessage(`Scorpions Dispersed!<br>(${duration / 1000} seconds)`, 1500); // Show message with duration
-
-            // Schedule dangers to reappear after the specified duration
-            const timeoutId = setTimeout(() => {
-                dangersActive = true;
-                showMessage("Scorpions Reappeared!", 1500); // Optional: inform player
-            }, duration); // Use the passed-in duration
-            powerupTimeouts.push(timeoutId); // Store timeout ID
-        }
-
-        // New: Activate Invincibility Power-up
-        function activateInvincibility(duration) {
-            isInvincible = true;
-            showMessage(`Invincible!<br>(${duration / 1000} seconds)`, 1500);
-
-            // Schedule invincibility to wear off
-            const timeoutId = setTimeout(() => {
-                isInvincible = false;
-                showMessage("Invincibility Worn Off!", 1500);
-            }, duration);
-            powerupTimeouts.push(timeoutId); // Store timeout ID
-        }
-
-        // New: Activate Hunter Mode Power-up
-        function activateHunterMode(duration) {
-            isHunterMode = true;
-            showMessage(`HUNTER MODE!<br>Eat the Scorpions!`, 1500);
-
-            // Schedule hunter mode to wear off
-            const timeoutId = setTimeout(() => {
-                isHunterMode = false;
-                showMessage("Hunter Mode Worn Off!", 1500);
-            }, duration);
-            powerupTimeouts.push(timeoutId); // Store timeout ID
-        }
-
-        // --- New: Lose Life Function ---
-        function loseLife() {
-            lives--;
-            livesEl.textContent = lives;
-
-            try { dangerSynth.triggerAttackRelease("8n"); } catch (e) { console.log("Audio context not ready"); }
-
-            // Stop the game and timers
-            gameRunning = false;
-            cancelAnimationFrame(gameLoopId);
-            clearInterval(timerId);
-            clearAllPowerupTimeouts(); // Clear all power-ups
-            
-            // Reset states
-            isInvincible = false;
-            isHunterMode = false;
-            dangersActive = true;
-
-            if (lives <= 0) {
-                endGame("You ran out of lives!");
-            } else {
-                // Pause the game for 2 seconds to show the message
-                showMessage(`Stung! ${lives} ${lives === 1 ? 'life' : 'lives'} left.`, 2000);
-
-                setTimeout(() => {
-                    // Restart the level
-                    setupLevel(level);
-                    
-                    // Center the croc
-                    croc.x = canvas.width / 2;
-                    croc.y = canvas.height / 2;
-                    mouse.x = croc.x;
-                    mouse.y = croc.y;
-
-                    // Give 2 seconds of spawn protection
-                    activateInvincibility(2000); 
-                    
-                    // Restart the game loop and timer
-                    gameRunning = true;
-                    gameLoop();
-                    timerId = setInterval(countdown, 1000);
-                }, 2000); // 2 second pause
-            }
-        }
-
-
-        // New function to check for collisions with dangers
-        function checkDangerCollisions() {
-            // Only check if game is running and dangers are active
-            if (!gameRunning || !dangersActive) return; 
-
-            const crocRadius = croc.size / 3;
-            
-            // Must use a reverse loop to safely splice from the array
-            for (let i = dangers.length - 1; i >= 0; i--) {
-                const danger = dangers[i];
-                const dangerRadius = danger.size / 2;
-                const dist = Math.hypot(croc.x - danger.x, croc.y - danger.y);
-
-                if (dist < crocRadius + dangerRadius) {
-                    // --- HIT DANGER ---
-                    
-                    if (isHunterMode) {
-                        // EAT the scorpion
-                        dangers.splice(i, 1); // Remove the danger
-                        score += 5; // Get 5 bonus points
-                        scoreEl.textContent = score;
-                        // Play a lower-pitched munch sound
-                        try { synth.triggerAttackRelease("A3", "8n"); } catch (e) { console.log("Audio context not ready"); }
-                    } else if (isInvincible) {
-                        // Do nothing, you are invincible
-                        // We don't break or return, so you can pass through multiple
-                    } else {
-                        // You are not invincible, you get stung
-                        
-                        // Call the new loseLife function
-                        loseLife();
-                        return; // Stop checking, game is over or paused
-                    }
-                }
-            }
-        }
-
-        // --- Main Game Loop ---
-        function gameLoop() {
-            if (!gameRunning) return;
-
-            // Clear the canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Update positions
-            updatePlayer();
-            updateEntities(bugs); // Use generic function
-            
-            // Only update dangers if they are active
-            if (dangersActive) {
-                updateEntities(dangers);
-            }
-            updateEntities(powerups); // Update power-up positions
-
-            // Check for game logic
-            checkCollisions(); // Check for eating bugs and power-ups
-            checkDangerCollisions(); // Check for hitting dangers
-
-            // Draw everything
-            drawEntities(bugs); // Use generic function
-            
-            // Only draw dangers if they are active
-            if (dangersActive) {
-                drawEntities(dangers); // Use generic function
-            }
-            drawEntities(powerups); // Draw power-ups
-            drawPlayer(); // Draw player last so it's on top
-
-            // Request next frame
-            gameLoopId = requestAnimationFrame(gameLoop);
-        }
-
-        // --- Event Listeners ---
-        
-        // Start/Restart button
-        startButton.addEventListener('click', async () => {
-            // Tone.js requires user interaction to start the audio context
-            await Tone.start();
-            console.log("Audio context started");
-            startGame();
         });
-
-        // Track mouse movement
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouse.x = e.clientX - rect.left;
-            mouse.y = e.clientY - rect.top;
-        });
-
-        // Handle touch movement for mobile
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault(); // Prevent screen scrolling
-            const rect = canvas.getBoundingClientRect();
-            mouse.x = e.touches[0].clientX - rect.left;
-            mouse.y = e.touches[0].clientY - rect.top;
-        }, { passive: false });
-
-        // Resize handler
-        window.addEventListener('resize', () => {
-            setCanvasDimensions();
-            // Stop the game if it's running, as resizing breaks things
-            if (gameRunning) {
-                endGame("Game reset due to<br>screen resize.");
-            }
-        });
-
     </script>
 </body>
 </html>
