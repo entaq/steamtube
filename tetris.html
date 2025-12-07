@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tetris Clone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            background-color: #111827; /* gray-900 */
+            color: #f3f4f6; /* gray-100 */
+            font-family: 'Press Start 2P', cursive;
+            overscroll-behavior: none;
+            touch-action: none;
+            /* Critical for mobile full height without scrollbars */
+            height: 100vh;
+            height: 100dvh; 
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* FLEX LAYOUT STRATEGY:
+           Header: Fixed Height
+           Controls: Fixed Height
+           Game Area: Flex-grow (takes remaining space), min-height:0 (allows shrinking)
+        */
+
+        #game-container {
+            flex-grow: 1;
+            min-height: 0; /* crucial for flex item to shrink below content size */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            position: relative;
+        }
+
+        canvas {
+            border: 4px solid #374151;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            /* Scale to fit container height, maintain aspect ratio */
+            height: 100%;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+
+        .btn-control {
+            background-color: #374151;
+            border-bottom: 4px solid #1f2937; /* Slightly thinner border to save space */
+            border-radius: 8px;
+            transition: all 0.05s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem; /* Slightly smaller icon */
+            color: #d1d5db;
+        }
+
+        .btn-control:active, .btn-control.active {
+            background-color: #4b5563;
+            border-bottom-width: 0px;
+            transform: translateY(4px);
+        }
+
+        #btn-rotate {
+            background-color: #581c87;
+            border-color: #3b0764;
+        }
+        #btn-rotate:active, #btn-rotate.active {
+            background-color: #6b21a8;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between">
+
+    <!-- Header: Fixed Height (approx 3.5rem) -->
+    <div class="w-full flex justify-between px-4 py-2 bg-gray-800 border-b border-gray-700 z-20 shadow-md shrink-0 h-14">
+        <div class="flex flex-col justify-center">
+            <span class="text-gray-400 text-[8px] mb-1">SCORE</span>
+            <span id="score" class="text-sm text-yellow-400">0</span>
+        </div>
+        <div class="flex flex-col justify-center text-right">
+             <span class="text-gray-400 text-[8px] mb-1">LEVEL</span>
+            <span id="level" class="text-sm text-blue-400">1</span>
+        </div>
+    </div>
+
+    <!-- Game Area: Flexible Height -->
+    <div id="game-container">
+        <!-- Relative wrapper to position overlay correctly over canvas -->
+        <div class="relative h-full w-auto aspect-[12/20]">
+            <canvas id="tetris" width="240" height="400" class="h-full w-auto block"></canvas>
+            
+            <!-- Overlay -->
+            <div id="overlay" class="absolute inset-0 bg-black bg-opacity-85 flex flex-col items-center justify-center z-10 rounded-sm">
+                <h1 class="text-xl md:text-3xl text-yellow-400 mb-4 text-center leading-relaxed drop-shadow-md">
+                    BLOCK<br>STACKER
+                </h1>
+                <p id="final-score" class="hidden mb-4 text-xs text-white font-bold">Score: 0</p>
+                <button id="start-btn" class="px-6 py-3 bg-blue-600 text-white rounded shadow-[0_4px_0_rgb(30,58,138)] active:shadow-none active:translate-y-[4px] font-bold text-xs hover:bg-blue-500 transition-all">
+                    PRESS START
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Controls: Fixed Height (approx 5rem) -->
+    <div class="w-full max-w-md px-2 pb-4 pt-1 grid grid-cols-4 gap-2 h-20 shrink-0">
+        <!-- Left -->
+        <button id="btn-left" class="btn-control">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        
+        <!-- Down -->
+        <button id="btn-down" class="btn-control">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
+        </button>
+        
+        <!-- Rotate -->
+        <button id="btn-rotate" class="btn-control">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg>
+        </button>
+
+        <!-- Right -->
+        <button id="btn-right" class="btn-control">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </button>
+    </div>
+
+<script>
+const canvas = document.getElementById('tetris');
+const context = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+const levelElement = document.getElementById('level');
+const overlay = document.getElementById('overlay');
+const startBtn = document.getElementById('start-btn');
+const finalScoreElement = document.getElementById('final-score');
+
+// Scale up context for crisp pixels
+context.scale(20, 20);
+
+// Game State
+let dropCounter = 0;
+let dropInterval = 1000;
+let lastTime = 0;
+let score = 0;
+let level = 1;
+let isGameOver = false;
+let isPaused = true;
+let requestId = null;
+
+const colors = [
+    null,
+    '#FF0D72', // T
+    '#0DC2FF', // I
+    '#0DFF72', // S
+    '#F538FF', // Z
+    '#FF8E0D', // L
+    '#FFE138', // O
+    '#3877FF', // J
+];
+
+const pieces = 'ILJOTSZ';
+const piecesMap = {
+    'T': [[0, 1, 0],[1, 1, 1],[0, 0, 0]],
+    'I': [[0, 1, 0, 0],[0, 1, 0, 0],[0, 1, 0, 0],[0, 1, 0, 0]],
+    'S': [[0, 1, 1],[1, 1, 0],[0, 0, 0]],
+    'Z': [[1, 1, 0],[0, 1, 1],[0, 0, 0]],
+    'L': [[0, 1, 0],[0, 1, 0],[0, 1, 1]],
+    'J': [[0, 1, 0],[0, 1, 0],[1, 1, 0]],
+    'O': [[1, 1],[1, 1]]
+};
+
+function createPiece(type) { return piecesMap[type]; }
+
+function createMatrix(w, h) {
+    const matrix = [];
+    while (h--) { matrix.push(new Array(w).fill(0)); }
+    return matrix;
+}
+
+const arena = createMatrix(12, 20);
+
+const player = {
+    pos: {x: 0, y: 0},
+    matrix: null,
+    score: 0,
+};
+
+function drawMatrix(matrix, offset) {
+    matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value !== 0) {
+                context.fillStyle = colors[value];
+                context.fillRect(x + offset.x, y + offset.y, 1, 1);
+                
+                context.lineWidth = 0.05;
+                context.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                context.strokeRect(x + offset.x, y + offset.y, 1, 1);
+                
+                context.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                context.fillRect(x + offset.x + 0.1, y + offset.y + 0.8, 0.8, 0.1);
+                context.fillRect(x + offset.x + 0.8, y + offset.y + 0.1, 0.1, 0.8);
+            }
+        });
+    });
+}
+
+function draw() {
+    context.fillStyle = '#000';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    drawMatrix(arena, {x: 0, y: 0});
+    drawMatrix(player.matrix, player.pos);
+}
+
+function merge(arena, player) {
+    player.matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value !== 0) {
+                arena[y + player.pos.y][x + player.pos.x] = value;
+            }
+        });
+    });
+}
+
+function rotate(matrix, dir) {
+    for (let y = 0; y < matrix.length; ++y) {
+        for (let x = 0; x < y; ++x) {
+            [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+        }
+    }
+    if (dir > 0) matrix.forEach(row => row.reverse());
+    else matrix.reverse();
+}
+
+function playerRotate(dir) {
+    const pos = player.pos.x;
+    let offset = 1;
+    rotate(player.matrix, dir);
+    while (collide(arena, player)) {
+        player.pos.x += offset;
+        offset = -(offset + (offset > 0 ? 1 : -1));
+        if (offset > player.matrix[0].length) {
+            rotate(player.matrix, -dir);
+            player.pos.x = pos;
+            return;
+        }
+    }
+}
+
+function collide(arena, player) {
+    const m = player.matrix;
+    const o = player.pos;
+    for (let y = 0; y < m.length; ++y) {
+        for (let x = 0; x < m[y].length; ++x) {
+            if (m[y][x] !== 0 &&
+               (arena[y + o.y] &&
+                arena[y + o.y][x + o.x]) !== 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function arenaSweep() {
+    let rowCount = 1;
+    outer: for (let y = arena.length -1; y > 0; --y) {
+        for (let x = 0; x < arena[y].length; ++x) {
+            if (arena[y][x] === 0) {
+                continue outer;
+            }
+        }
+        const row = arena.splice(y, 1)[0].fill(0);
+        arena.unshift(row);
+        ++y;
+        player.score += rowCount * 10;
+        rowCount *= 2;
+    }
+    if (rowCount > 1) updateScore();
+}
+
+function playerReset() {
+    const piecesStr = 'ILJOTSZ';
+    const type = piecesStr[piecesStr.length * Math.random() | 0];
+    player.matrix = createPiece(type);
+    
+    const colorIndex = piecesStr.indexOf(type) + 1;
+    player.matrix.forEach((row, y) => {
+        row.forEach((val, x) => {
+            if (val !== 0) player.matrix[y][x] = colorIndex;
+        });
+    });
+
+    player.pos.y = 0;
+    player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+
+    if (collide(arena, player)) {
+        gameOver();
+    }
+}
+
+function gameOver() {
+    isGameOver = true;
+    isPaused = true;
+    cancelAnimationFrame(requestId);
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    finalScoreElement.innerText = `Final Score: ${player.score}`;
+    finalScoreElement.classList.remove('hidden');
+    startBtn.innerText = "TRY AGAIN";
+}
+
+function updateScore() {
+    scoreElement.innerText = player.score;
+    const newLevel = Math.floor(player.score / 100) + 1;
+    if (newLevel > level) {
+        level = newLevel;
+        levelElement.innerText = level;
+        dropInterval = Math.max(100, 1000 - (level * 50)); 
+    }
+}
+
+function playerDrop() {
+    player.pos.y++;
+    if (collide(arena, player)) {
+        player.pos.y--;
+        merge(arena, player);
+        playerReset();
+        arenaSweep();
+        updateScore();
+    }
+    dropCounter = 0;
+}
+
+function playerMove(offset) {
+    player.pos.x += offset;
+    if (collide(arena, player)) {
+        player.pos.x -= offset;
+    }
+}
+
+function update(time = 0) {
+    if (isPaused) return;
+    const deltaTime = time - lastTime;
+    lastTime = time;
+    dropCounter += deltaTime;
+    if (dropCounter > dropInterval) {
+        playerDrop();
+    }
+    draw();
+    requestId = requestAnimationFrame(update);
+}
+
+function startGame() {
+    arena.forEach(row => row.fill(0));
+    player.score = 0;
+    level = 1;
+    dropInterval = 1000;
+    updateScore();
+    isGameOver = false;
+    isPaused = false;
+    playerReset();
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+    lastTime = 0;
+    dropCounter = 0;
+    if (requestId) cancelAnimationFrame(requestId);
+    update();
+}
+
+document.addEventListener('keydown', event => {
+    if (isGameOver || isPaused) return;
+    if (event.keyCode === 37) playerMove(-1);
+    else if (event.keyCode === 39) playerMove(1);
+    else if (event.keyCode === 40) playerDrop();
+    else if (event.keyCode === 38) playerRotate(1);
+});
+
+const btnLeft = document.getElementById('btn-left');
+const btnRight = document.getElementById('btn-right');
+const btnDown = document.getElementById('btn-down');
+const btnRotate = document.getElementById('btn-rotate');
+
+function setupRepeatButton(btn, action, interval) {
+    let repeatTimer;
+    const start = (e) => {
+        if(e.cancelable) e.preventDefault();
+        if (isPaused || isGameOver) return;
+        btn.classList.add('active');
+        action();
+        if(repeatTimer) clearInterval(repeatTimer);
+        repeatTimer = setInterval(() => {
+            if (!isPaused && !isGameOver) action();
+        }, interval);
+    };
+    const stop = (e) => {
+        if(e.cancelable) e.preventDefault();
+        btn.classList.remove('active');
+        if (repeatTimer) {
+            clearInterval(repeatTimer);
+            repeatTimer = null;
+        }
+    };
+    btn.addEventListener('touchstart', start, {passive: false});
+    btn.addEventListener('touchend', stop);
+    btn.addEventListener('touchcancel', stop);
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('mouseup', stop);
+    btn.addEventListener('mouseleave', stop);
+}
+
+function setupTapButton(btn, action) {
+    let isTouch = false;
+    const trigger = (e) => {
+        if (e.cancelable) e.preventDefault();
+        if (isPaused || isGameOver) return;
+        btn.classList.add('active');
+        action();
+        setTimeout(() => btn.classList.remove('active'), 100);
+    };
+    btn.addEventListener('touchstart', (e) => {
+        isTouch = true;
+        trigger(e);
+    }, {passive: false});
+    btn.addEventListener('mousedown', (e) => {
+        if(isTouch) return;
+        trigger(e);
+    });
+}
+
+setupTapButton(btnLeft, () => playerMove(-1));
+setupTapButton(btnRight, () => playerMove(1));
+setupTapButton(btnRotate, () => playerRotate(1));
+setupRepeatButton(btnDown, playerDrop, 50);
+
+startBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    startGame();
+});
+</script>
+</body>
+</html>

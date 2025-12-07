@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>NEON HORIZON</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050011;
+            font-family: 'Orbitron', sans-serif;
+            touch-action: none; /* Prevent pull-to-refresh on mobile */
+            user-select: none;
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI Overlays */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to game controls */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-element {
+            padding: 20px;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff, 0 0 20px #ff00ff;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+
+        #health-bar-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #ff00ff;
+            transform: skewX(-20deg);
+        }
+
+        #health-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff00ff, #00ffff);
+            transition: width 0.2s;
+        }
+
+        /* Screens */
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 0, 17, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 20;
+            backdrop-filter: blur(5px);
+        }
+
+        h1 {
+            font-size: 4rem;
+            color: #ff00ff;
+            text-transform: uppercase;
+            text-shadow: 
+                0 0 5px #ff00ff,
+                0 0 10px #ff00ff,
+                0 0 40px #00ffff;
+            margin-bottom: 10px;
+            text-align: center;
+            letter-spacing: 5px;
+            font-style: italic;
+        }
+
+        p {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 0 0 5px #00ffff;
+            line-height: 1.5;
+        }
+
+        button {
+            background: transparent;
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            padding: 15px 40px;
+            border: 2px solid #00ffff;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px #00ffff inset, 0 0 20px #00ffff;
+        }
+
+        button:hover {
+            background: #00ffff;
+            color: #000;
+            box-shadow: 0 0 30px #00ffff;
+        }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            display: none; /* Hidden by default, shown via JS if touch detected */
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        #joystick-zone {
+            position: absolute;
+            bottom: 50px;
+            left: 50px;
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            border: 2px dashed rgba(0, 255, 255, 0.3);
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px #00ffff;
+            pointer-events: none;
+        }
+
+        #fire-zone {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            pointer-events: auto;
+            /* Debug visualize */
+            /* background: rgba(255, 0, 0, 0.1); */ 
+        }
+
+        #fire-label {
+            position: absolute;
+            bottom: 100px;
+            right: 80px;
+            color: rgba(255, 0, 255, 0.5);
+            font-size: 24px;
+            border: 2px solid rgba(255, 0, 255, 0.5);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Animation for hit effect */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .shake {
+            animation: shake 0.5s;
+            animation-iteration-count: 1;
+        }
+    </style>
+    
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="game-container"></div>
+
+    <div id="ui-layer">
+        <div id="score-display">SCORE: 000000</div>
+        <div id="health-bar-container">
+            <div id="health-fill"></div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen-overlay">
+        <h1>NEON HORIZON</h1>
+        <p>PILOT THE GRID. SURVIVE THE SYNC.</p>
+        <p style="font-size: 0.9rem; color: #aaa;">
+            DESKTOP: WASD / ARROWS to Move • SPACE to Fire<br>
+            MOBILE: Left Stick to Move • Tap Right to Fire
+        </p>
+        <button id="start-btn">INITIATE</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="screen-overlay hidden">
+        <h1 style="color: #ff0055; text-shadow: 0 0 20px #ff0000;">SYSTEM FAILURE</h1>
+        <p id="final-score">FINAL SCORE: 0</p>
+        <button id="restart-btn">REBOOT SYSTEM</button>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+        <div id="joystick-zone">
+            <div id="joystick-knob"></div>
+        </div>
+        <div id="fire-zone"></div>
+        <div id="fire-label">FIRE</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // --- CONFIGURATION ---
+        const COLORS = {
+            background: 0x050011,
+            grid: 0x240046,
+            gridLight: 0xff00ff,
+            ship: 0x000000,
+            shipEdge: 0x00ffff,
+            shipEngine: 0x00ffff,
+            enemy: 0xff00ff,
+            laser: 0x00ffff,
+            star: 0xffffff
+        };
+
+        const GAME_CONFIG = {
+            speed: 0.8,
+            shipSpeed: 0.35,
+            shipLimitX: 18,
+            shipLimitY: 8,
+            fireRate: 150, // ms
+            enemySpawnRate: 1000,
+            initialHealth: 100
+        };
+
+        // --- GLOBAL STATE ---
+        let scene, camera, renderer, composer;
+        let ship;
+        let grid;
+        let gameState = {
+            playing: false,
+            score: 0,
+            health: 100,
+            lastTime: 0
+        };
+        let input = { x: 0, y: 0, fire: false };
+        let mobileActive = false;
+        
+        // Object Pools
+        const lasers = [];
+        const enemies = [];
+        const particles = [];
+        const stars = [];
+
+        // DOM Elements
+        const uiScore = document.getElementById('score-display');
+        const uiHealth = document.getElementById('health-fill');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScore = document.getElementById('final-score');
+        
+        // --- INITIALIZATION ---
+        function init() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(COLORS.background, 0.015);
+            scene.background = new THREE.Color(COLORS.background);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 3, 15);
+            camera.lookAt(0, 0, -20);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio for performance
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            // Post Processing (BLOOM)
+            const renderScene = new RenderPass(scene, camera);
+            
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0;
+            bloomPass.strength = 1.8; // High glow
+            bloomPass.radius = 0.5;
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+
+            // Build World
+            createSun();
+            createGrid();
+            createStarfield();
+            createShip();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            
+            // Mobile Controls Setup
+            setupTouchControls();
+
+            // Game Loop
+            requestAnimationFrame(animate);
+        }
+
+        // --- ASSET GENERATION ---
+
+        function createShip() {
+            const group = new THREE.Group();
+
+            // Main Body (Triangular Prism-ish)
+            const geometry = new THREE.ConeGeometry(1, 4, 3);
+            geometry.rotateX(Math.PI / 2);
+            geometry.rotateY(Math.PI); // Point away
+            
+            const material = new THREE.MeshBasicMaterial({ color: COLORS.ship });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            // Wireframe glow
+            const edges = new THREE.EdgesGeometry(geometry);
+            const lineMat = new THREE.LineBasicMaterial({ color: COLORS.shipEdge });
+            const wireframe = new THREE.LineSegments(edges, lineMat);
+            
+            // Engine Glow
+            const engineGeo = new THREE.SphereGeometry(0.3, 8, 8);
+            const engineMat = new THREE.MeshBasicMaterial({ color: COLORS.shipEngine });
+            const engine = new THREE.Mesh(engineGeo, engineMat);
+            engine.position.z = 1.8;
+            engine.scale.set(1, 0.5, 1);
+
+            group.add(mesh);
+            group.add(wireframe);
+            group.add(engine);
+
+            ship = {
+                mesh: group,
+                velocity: new THREE.Vector2(0, 0),
+                tilt: 0,
+                lastShot: 0
+            };
+            scene.add(group);
+        }
+
+        function createGrid() {
+            // Moving Grid Floor
+            const size = 200;
+            const divisions = 40;
+            
+            // We create a custom grid helper to animate it
+            grid = new THREE.Group();
+            
+            // Vertical lines
+            for(let i=0; i<=divisions; i++) {
+                const z = (i / divisions) * size - size/2;
+                const points = [
+                    new THREE.Vector3(-size/2, -5, z),
+                    new THREE.Vector3(size/2, -5, z)
+                ];
+                const geo = new THREE.BufferGeometry().setFromPoints(points);
+                const mat = new THREE.LineBasicMaterial({ 
+                    color: COLORS.gridLight, 
+                    transparent: true, 
+                    opacity: 0.15 + (1 - i/divisions)*0.5 // Fade out in distance
+                });
+                const line = new THREE.Line(geo, mat);
+                grid.add(line);
+            }
+
+            // Horizontal moving lines (We will animate texture offset ideally, but physically moving lines works for primitive style)
+            // Just using infinite grid logic in update loop
+            const gridHelper = new THREE.GridHelper(size, divisions, COLORS.gridLight, COLORS.gridLight);
+            gridHelper.position.y = -5;
+            gridHelper.material.transparent = true;
+            gridHelper.material.opacity = 0.3;
+            grid.add(gridHelper);
+
+            scene.add(grid);
+            grid.userData = { offset: 0 };
+        }
+
+        function createSun() {
+            // Retro Sun (Gradient Sphere with stripes)
+            // Since we want single file simplicity without complex texture loading, we use vertex colors or a simple shader
+            
+            const vertexShader = `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
+
+            const fragmentShader = `
+                varying vec2 vUv;
+                void main() {
+                    // Gradient: Yellow bottom to Purple top
+                    vec3 color1 = vec3(1.0, 0.0, 1.0); // Purple
+                    vec3 color2 = vec3(1.0, 0.8, 0.0); // Yellow/Orange
+                    
+                    float gradient = vUv.y;
+                    
+                    // Stripes
+                    float stripes = sin(vUv.y * 50.0);
+                    float cutoff = smoothstep(0.0, 0.1, stripes);
+                    
+                    // Cutout stripes near bottom
+                    if(vUv.y < 0.5 && stripes > 0.8) {
+                        discard;
+                    }
+
+                    vec3 finalColor = mix(color2, color1, gradient);
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `;
+
+            const geometry = new THREE.SphereGeometry(30, 32, 32);
+            const material = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                side: THREE.BackSide,
+                transparent: true
+            });
+
+            const sun = new THREE.Mesh(geometry, material);
+            sun.position.set(0, 5, -100);
+            scene.add(sun);
+        }
+
+        function createStarfield() {
+            const geometry = new THREE.BufferGeometry();
+            const count = 1000;
+            const positions = new Float32Array(count * 3);
+
+            for (let i = 0; i < count; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 400; // x
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 200; // y
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 500 - 100; // z
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const material = new THREE.PointsMaterial({ color: COLORS.star, size: 0.5 });
+            const starSystem = new THREE.Points(geometry, material);
+            scene.add(starSystem);
+            stars.push(starSystem);
+        }
+
+        // --- GAMEPLAY OBJECTS ---
+
+        function spawnEnemy() {
+            if (!gameState.playing) return;
+
+            // Simple Object Pooling logic could go here, but for clarity we create new
+            // Optimization: In a huge production game, reuse meshes.
+            
+            const size = 1 + Math.random();
+            const geometry = new THREE.BoxGeometry(size, size, size);
+            const material = new THREE.MeshBasicMaterial({ color: 0x000000 }); 
+            const edges = new THREE.EdgesGeometry(geometry);
+            const lineMat = new THREE.LineBasicMaterial({ color: COLORS.enemy, linewidth: 2 });
+            
+            const enemy = new THREE.Group();
+            const mesh = new THREE.Mesh(geometry, material);
+            const wireframe = new THREE.LineSegments(edges, lineMat);
+            
+            enemy.add(mesh);
+            enemy.add(wireframe);
+
+            // Random position in distance
+            const x = (Math.random() - 0.5) * 40;
+            const y = (Math.random() - 0.5) * 20;
+            enemy.position.set(x, y, -100);
+
+            enemy.userData = {
+                active: true,
+                rotSpeed: { x: Math.random()*0.05, y: Math.random()*0.05 },
+                velocity: 0.8 + Math.random() * 0.6 // Speed variance
+            };
+
+            scene.add(enemy);
+            enemies.push(enemy);
+        }
+
+        function fireLaser() {
+            const geometry = new THREE.BoxGeometry(0.2, 0.2, 4);
+            const material = new THREE.MeshBasicMaterial({ color: COLORS.laser });
+            const laser = new THREE.Mesh(geometry, material);
+            
+            laser.position.copy(ship.mesh.position);
+            laser.position.z -= 1; // Start slightly in front
+            
+            scene.add(laser);
+            lasers.push({ mesh: laser, active: true });
+        }
+
+        function createExplosion(position, color) {
+            const particleCount = 15;
+            for(let i=0; i<particleCount; i++) {
+                const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                const mat = new THREE.MeshBasicMaterial({ color: color });
+                const mesh = new THREE.Mesh(geo, mat);
+                
+                mesh.position.copy(position);
+                
+                // Random spread
+                mesh.userData = {
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.8,
+                        (Math.random() - 0.5) * 0.8,
+                        (Math.random() - 0.5) * 0.8
+                    ),
+                    life: 1.0 // 100% life
+                };
+                
+                scene.add(mesh);
+                particles.push(mesh);
+            }
+        }
+
+        // --- CONTROLS ---
+
+        function onKeyDown(event) {
+            switch(event.code) {
+                case 'ArrowUp': case 'KeyW': input.y = 1; break;
+                case 'ArrowDown': case 'KeyS': input.y = -1; break;
+                case 'ArrowLeft': case 'KeyA': input.x = -1; break;
+                case 'ArrowRight': case 'KeyD': input.x = 1; break;
+                case 'Space': input.fire = true; break;
+            }
+        }
+
+        function onKeyUp(event) {
+            switch(event.code) {
+                case 'ArrowUp': case 'KeyW': if(input.y === 1) input.y = 0; break;
+                case 'ArrowDown': case 'KeyS': if(input.y === -1) input.y = 0; break;
+                case 'ArrowLeft': case 'KeyA': if(input.x === -1) input.x = 0; break;
+                case 'ArrowRight': case 'KeyD': if(input.x === 1) input.x = 0; break;
+                case 'Space': input.fire = false; break;
+            }
+        }
+
+        function setupTouchControls() {
+            // Check if touch device roughly
+            const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            if(isTouch) {
+                mobileActive = true;
+                // document.getElementById('mobile-controls').style.display = 'block';
+                // Wait to show until game starts
+            }
+
+            const joystickZone = document.getElementById('joystick-zone');
+            const knob = document.getElementById('joystick-knob');
+            let joyStartX = 0, joyStartY = 0;
+
+            joystickZone.addEventListener('touchstart', (e) => {
+                joyStartX = e.touches[0].clientX;
+                joyStartY = e.touches[0].clientY;
+            }, {passive: false});
+
+            joystickZone.addEventListener('touchmove', (e) => {
+                e.preventDefault(); // Prevent scroll
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+
+                let deltaX = touchX - joyStartX;
+                let deltaY = touchY - joyStartY;
+
+                // Clamp joystick movement visually
+                const maxDist = 40;
+                const dist = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
+                if(dist > maxDist) {
+                    const angle = Math.atan2(deltaY, deltaX);
+                    deltaX = Math.cos(angle) * maxDist;
+                    deltaY = Math.sin(angle) * maxDist;
+                }
+
+                knob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+
+                // Normalize input -1 to 1
+                input.x = deltaX / maxDist;
+                input.y = -(deltaY / maxDist); // Invert Y for flight controls
+            }, {passive: false});
+
+            joystickZone.addEventListener('touchend', () => {
+                knob.style.transform = `translate(-50%, -50%)`;
+                input.x = 0;
+                input.y = 0;
+            });
+
+            const fireZone = document.getElementById('fire-zone');
+            fireZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                input.fire = true;
+                fireZone.style.background = "rgba(255,0,255,0.1)";
+            }, {passive: false});
+            fireZone.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                input.fire = false;
+                fireZone.style.background = "transparent";
+            });
+        }
+
+        // --- MAIN LOOP ---
+
+        function update(time) {
+            if(!gameState.playing) return;
+
+            // 1. Ship Movement
+            // Lerp velocity for floaty feel
+            ship.velocity.x = THREE.MathUtils.lerp(ship.velocity.x, input.x * GAME_CONFIG.shipSpeed, 0.1);
+            ship.velocity.y = THREE.MathUtils.lerp(ship.velocity.y, input.y * GAME_CONFIG.shipSpeed, 0.1);
+
+            ship.mesh.position.x += ship.velocity.x;
+            ship.mesh.position.y += ship.velocity.y;
+
+            // Clamp Position
+            ship.mesh.position.x = THREE.MathUtils.clamp(ship.mesh.position.x, -GAME_CONFIG.shipLimitX, GAME_CONFIG.shipLimitX);
+            ship.mesh.position.y = THREE.MathUtils.clamp(ship.mesh.position.y, -GAME_CONFIG.shipLimitY, GAME_CONFIG.shipLimitY);
+
+            // Banking effect
+            const targetTilt = -ship.velocity.x * 2;
+            ship.mesh.rotation.z = THREE.MathUtils.lerp(ship.mesh.rotation.z, targetTilt, 0.1);
+
+            // 2. Firing
+            if(input.fire && time - ship.lastShot > GAME_CONFIG.fireRate) {
+                fireLaser();
+                ship.lastShot = time;
+            }
+
+            // 3. Lasers Logic
+            for(let i = lasers.length - 1; i >= 0; i--) {
+                const laser = lasers[i];
+                laser.mesh.position.z -= 2; // Speed
+                if(laser.mesh.position.z < -100) {
+                    scene.remove(laser.mesh);
+                    lasers.splice(i, 1);
+                }
+            }
+
+            // 4. Enemy Spawning
+            if(Math.random() * 1000 < 45) { // Approx check per frame, crude but works
+                spawnEnemy();
+            }
+
+            // 5. Enemy Logic & Collision
+            const shipBox = new THREE.Box3().setFromObject(ship.mesh);
+
+            for(let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                enemy.position.z += enemy.userData.velocity;
+                enemy.rotation.x += enemy.userData.rotSpeed.x;
+                enemy.rotation.y += enemy.userData.rotSpeed.y;
+
+                // Collision with Ship
+                const enemyBox = new THREE.Box3().setFromObject(enemy);
+                if(shipBox.intersectsBox(enemyBox)) {
+                    takeDamage(20);
+                    destroyEnemy(i);
+                    createExplosion(ship.mesh.position, COLORS.shipEdge);
+                    document.body.classList.add('shake');
+                    setTimeout(() => document.body.classList.remove('shake'), 500);
+                    continue;
+                }
+
+                // Collision with Lasers
+                let hit = false;
+                for(let j = lasers.length - 1; j >= 0; j--) {
+                    const laserBox = new THREE.Box3().setFromObject(lasers[j].mesh);
+                    if(laserBox.intersectsBox(enemyBox)) {
+                        createExplosion(enemy.position, COLORS.enemy);
+                        // Score
+                        gameState.score += 100;
+                        updateUI();
+                        
+                        // Clean up laser
+                        scene.remove(lasers[j].mesh);
+                        lasers.splice(j, 1);
+                        
+                        hit = true;
+                        break;
+                    }
+                }
+
+                if(hit) {
+                    destroyEnemy(i);
+                    continue;
+                }
+
+                // Remove if passed camera
+                if(enemy.position.z > 10) {
+                    destroyEnemy(i);
+                }
+            }
+
+            // 6. Particles
+            for(let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.position.add(p.userData.velocity);
+                p.userData.life -= 0.05;
+                p.scale.multiplyScalar(0.9); // Shrink
+
+                if(p.userData.life <= 0) {
+                    scene.remove(p);
+                    particles.splice(i, 1);
+                }
+            }
+
+            // 7. World Movement (Illusion)
+            // Move stars towards camera
+            const starGeo = stars[0].geometry;
+            const positions = starGeo.attributes.position.array;
+            for(let i=2; i<positions.length; i+=3) {
+                positions[i] += 0.5;
+                if(positions[i] > 20) positions[i] = -100; // Reset to back
+            }
+            starGeo.attributes.position.needsUpdate = true;
+            
+            // Grid Movement
+            grid.position.z += 0.5;
+            if(grid.position.z > 5) grid.position.z = 0;
+        }
+
+        function destroyEnemy(index) {
+            scene.remove(enemies[index]);
+            enemies.splice(index, 1);
+        }
+
+        function takeDamage(amount) {
+            gameState.health -= amount;
+            if(gameState.health <= 0) {
+                gameOver();
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            uiScore.innerText = `SCORE: ${gameState.score.toString().padStart(6, '0')}`;
+            uiHealth.style.width = `${Math.max(0, gameState.health)}%`;
+        }
+
+        function startGame() {
+            gameState.playing = true;
+            gameState.score = 0;
+            gameState.health = GAME_CONFIG.initialHealth;
+            gameState.lastTime = 0;
+
+            // Reset scene objects
+            enemies.forEach(e => scene.remove(e));
+            enemies.length = 0;
+            lasers.forEach(l => scene.remove(l.mesh));
+            lasers.length = 0;
+            
+            ship.mesh.position.set(0, 0, 0);
+            
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            updateUI();
+
+            if(mobileActive) {
+                document.getElementById('mobile-controls').style.display = 'block';
+            }
+        }
+
+        function gameOver() {
+            gameState.playing = false;
+            finalScore.innerText = `FINAL SCORE: ${gameState.score}`;
+            gameOverScreen.classList.remove('hidden');
+            document.getElementById('mobile-controls').style.display = 'none';
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            update(time);
+            composer.render();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- BINDING UI BUTTONS ---
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>

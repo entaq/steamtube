@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SteamTube - Special Zone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1020 0%, #2d1930 50%, #1a1020 100%);
+            color: #e8dcc8;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Animated Background Stars */
+        .stars-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #c9a961;
+            border-radius: 50%;
+            animation: twinkle 2s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            z-index: 100;
+            padding: 2rem 5%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(26, 16, 32, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #9b6dc9;
+            box-shadow: 0 4px 20px rgba(155, 109, 201, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #9b6dc9;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #9b6dc9, #6b4c8a);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 4px 15px rgba(155, 109, 201, 0.4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 5%;
+            text-align: center;
+        }
+
+        .special-title {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #9b6dc9, #d4a0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .special-message {
+            font-size: 1.5rem;
+            color: #d4c5e8;
+            max-width: 600px;
+            line-height: 1.8;
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.2s backwards;
+        }
+
+        .special-card {
+            background: rgba(75, 45, 100, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 2px solid rgba(155, 109, 201, 0.5);
+            max-width: 600px;
+            animation: fadeInUp 1s ease-out 0.4s backwards;
+        }
+
+        .special-card h2 {
+            font-size: 2rem;
+            color: #d4a0ff;
+            margin-bottom: 1.5rem;
+        }
+
+        .special-card p {
+            font-size: 1.2rem;
+            color: #c9b8e0;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #9b6dc9, #6b4c8a);
+            color: #fff;
+            box-shadow: 0 8px 25px rgba(155, 109, 201, 0.4);
+            margin-top: 2rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(155, 109, 201, 0.6);
+        }
+
+        /* Games Section */
+        .games-section {
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 3rem;
+        }
+
+        .games-section h2 {
+            font-size: 2.5rem;
+            color: #d4a0ff;
+            margin-bottom: 2rem;
+            animation: fadeInUp 1s ease-out 0.5s backwards;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .game-card {
+            background: rgba(75, 45, 100, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 2px solid rgba(155, 109, 201, 0.4);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            animation: fadeInUp 1s ease-out 0.6s backwards;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(155, 109, 201, 0.15) 0%, transparent 70%);
+            transform: scale(0);
+            transition: transform 0.6s ease;
+        }
+
+        .game-card:hover::before {
+            transform: scale(1);
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px);
+            border-color: #d4a0ff;
+            box-shadow: 0 15px 40px rgba(155, 109, 201, 0.4);
+        }
+
+        .game-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .game-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 0.8rem;
+            color: #d4a0ff;
+            position: relative;
+        }
+
+        .game-card p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #c9b8e0;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .game-card .btn {
+            margin-top: 0;
+            padding: 0.8rem 2rem;
+            font-size: 1.1rem;
+        }
+
+        .vip-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #1a1020;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Footer */
+        footer {
+            position: relative;
+            z-index: 10;
+            padding: 2rem 5%;
+            text-align: center;
+            background: rgba(26, 16, 32, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 2px solid #9b6dc9;
+        }
+
+        footer p {
+            color: #c9b8e0;
+            font-size: 1.1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2rem;
+            }
+
+            .logo-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+
+            .special-title {
+                font-size: 2.5rem;
+            }
+
+            .special-message {
+                font-size: 1.2rem;
+            }
+
+            main {
+                padding: 2rem 5%;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1020;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #9b6dc9, #6b4c8a);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9b6dc9;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background Stars -->
+    <div class="stars-background" id="stars"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon">✨</div>
+            <span>Special Zone</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <h1 class="special-title">🎉 Welcome, VIP! 🎉</h1>
+        <p class="special-message">
+            You've unlocked the secret Special Zone! Only those with the password can see this exclusive content.
+        </p>
+        
+        <div class="special-card">
+            <h2>🔮 Secret Developer Notes</h2>
+            <p>
+                This is a hidden area for special members only. 
+                Here you'll find exclusive content, early access to new games, 
+                and behind-the-scenes looks at what's coming next to SteamTube!
+            </p>
+        </div>
+
+        <!-- Exclusive Games Section -->
+        <div class="games-section">
+            <h2>🎮 Exclusive VIP Games</h2>
+            <div class="games-grid">
+                <div class="game-card">
+                    <span class="vip-badge">VIP ONLY</span>
+                    <div class="game-icon">🧱</div>
+                    <h3>Tetris</h3>
+                    <p>The legendary block-stacking puzzle! Arrange falling tetrominoes to clear lines and achieve the highest score in this timeless classic.</p>
+                    <a href="tetris.html" class="btn"><span>Play Now</span></a>
+                </div>
+                <div class="game-card">
+                    <span class="vip-badge">VIP ONLY</span>
+                    <div class="game-icon">🌌</div>
+                    <h3>Neon Horizon</h3>
+                    <p>Race through a synthwave dreamscape! Dodge obstacles and collect power-ups in this neon-drenched endless runner adventure.</p>
+                    <a href="neon.html" class="btn"><span>Play Now</span></a>
+                </div>
+            </div>
+        </div>
+
+        <a href="index.html" class="btn">← Back to Games</a>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 SteamTube Special Zone. For VIPs only.</p>
+    </footer>
+
+    <script>
+        // Generate random stars
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 50; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 2 + 's';
+            star.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+            starsContainer.appendChild(star);
+        }
+    </script>
+</body>
+</html>
+

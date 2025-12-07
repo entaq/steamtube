@@ -392,6 +392,13 @@
                 <a href="alien.html" class="btn"><span>Play Now</span></a>
             </div>
         </div>
+
+        <!-- Special Button -->
+        <div style="text-align: center; margin-top: 4rem;">
+            <button onclick="checkSpecialAccess()" class="btn special-btn" style="background: linear-gradient(135deg, #6b4c8a, #4a3260); box-shadow: 0 8px 25px rgba(107, 76, 138, 0.4);">
+                <span>🔒 Special</span>
+            </button>
+        </div>
     </main>
 
     <!-- Footer -->
@@ -409,6 +416,30 @@
                 gear.style.transform = `translateY(${scrolled * speed}px) rotate(${scrolled * 0.1}deg)`;
             });
         });
+
+        // Simple hash function (djb2)
+        function simpleHash(str) {
+            let hash = 5381;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) + hash) + str.charCodeAt(i);
+                hash = hash & hash;
+            }
+            return hash >>> 0;
+        }
+
+        // Hash of "gd6741" = 4283596098
+        const SPECIAL_HASH = 4283596098;
+
+        function checkSpecialAccess() {
+            const password = prompt("Enter the secret password:");
+            if (password === null) return;
+            
+            if (simpleHash(password) === SPECIAL_HASH) {
+                window.location.href = "special.html";
+            } else {
+                alert("Access denied! Incorrect password.");
+            }
+        }
     </script>
 </body>
 </html>
