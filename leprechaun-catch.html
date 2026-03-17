@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leprechaun Catch, Leprechaun Catch</title>
+    <style>
+        :root {
+            --ink: #17321d;
+            --panel: rgba(12, 43, 19, 0.78);
+            --panel-border: rgba(244, 227, 162, 0.42);
+            --gold: #ffd447;
+            --gold-deep: #c88311;
+            --grass: #3b8f39;
+            --clover: #7fd45c;
+            --cream: #fff8e0;
+            --danger: #ff6b5e;
+            --track: rgba(255, 248, 224, 0.16);
+            --fill: linear-gradient(90deg, #ffe168 0%, #f7a52d 50%, #7bd25d 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+        }
+
+        body {
+            font-family: "Trebuchet MS", "Avenir Next", "Gill Sans", sans-serif;
+            color: var(--cream);
+            background:
+                radial-gradient(circle at top, rgba(255, 230, 136, 0.22), transparent 32%),
+                linear-gradient(180deg, #e6f7ff 0%, #b8ebff 20%, #8fdc9a 56%, #3b7b33 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .game-shell {
+            width: min(1100px, 100%);
+            display: grid;
+            gap: 14px;
+            justify-items: center;
+        }
+
+        .title-block {
+            text-align: center;
+        }
+
+        .title-block h1 {
+            margin: 0;
+            font-size: clamp(2rem, 4.5vw, 3.6rem);
+            line-height: 0.95;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #fff9d9;
+            text-shadow:
+                0 3px 0 rgba(20, 60, 14, 0.28),
+                0 14px 26px rgba(15, 53, 24, 0.22);
+        }
+
+        .title-block p {
+            margin: 0.55rem 0 0;
+            font-size: clamp(0.95rem, 2vw, 1.1rem);
+            color: rgba(23, 50, 29, 0.86);
+            font-weight: 700;
+            letter-spacing: 0.03em;
+        }
+
+        .hud {
+            width: min(960px, 100%);
+            background: var(--panel);
+            border: 2px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 14px 16px;
+            box-shadow: 0 18px 40px rgba(16, 46, 21, 0.24);
+            backdrop-filter: blur(8px);
+        }
+
+        .hud-top,
+        .hud-bottom {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hud-top {
+            margin-bottom: 12px;
+        }
+
+        .progress-label {
+            min-width: 110px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .progress-track {
+            flex: 1;
+            min-width: 160px;
+            height: 18px;
+            background: var(--track);
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 248, 224, 0.2);
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--fill);
+            border-radius: inherit;
+            transition: width 0.18s ease;
+            box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.28);
+        }
+
+        .progress-percent {
+            min-width: 54px;
+            text-align: right;
+            font-weight: 800;
+            color: var(--gold);
+        }
+
+        .stat {
+            flex: 1 1 140px;
+            min-width: 120px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 248, 224, 0.1);
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255, 248, 224, 0.72);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #fff9d9;
+        }
+
+        .game-frame {
+            position: relative;
+            width: min(960px, 100%);
+            border-radius: 28px;
+            overflow: hidden;
+            border: 3px solid rgba(247, 213, 106, 0.68);
+            box-shadow:
+                0 24px 45px rgba(17, 45, 18, 0.28),
+                inset 0 0 0 2px rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            background: transparent;
+        }
+
+        .overlay,
+        .quiz-card {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+
+        .overlay[hidden],
+        .quiz-card[hidden] {
+            display: none;
+        }
+
+        .overlay-panel,
+        .quiz-panel {
+            width: min(540px, 100%);
+            background: rgba(13, 38, 18, 0.88);
+            border: 2px solid rgba(255, 235, 155, 0.48);
+            border-radius: 26px;
+            padding: 24px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 16px 36px rgba(10, 31, 16, 0.35);
+        }
+
+        .overlay-panel h2,
+        .quiz-panel h2 {
+            margin: 0 0 10px;
+            font-size: clamp(1.65rem, 4vw, 2.2rem);
+            color: #fff0a9;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .overlay-panel p,
+        .quiz-panel p {
+            margin: 0 0 16px;
+            line-height: 1.5;
+            color: rgba(255, 248, 224, 0.9);
+        }
+
+        .controls-note {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 18px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 14px 16px;
+        }
+
+        .controls-note span {
+            font-size: 0.96rem;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        .primary-btn,
+        .secondary-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 12px 22px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #ffe88a 0%, #f3b333 100%);
+            color: #2f2604;
+            box-shadow: 0 10px 18px rgba(243, 179, 51, 0.28);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.14);
+            color: var(--cream);
+            border: 1px solid rgba(255, 248, 224, 0.2);
+        }
+
+        .primary-btn:hover,
+        .secondary-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .question {
+            font-size: clamp(2rem, 5vw, 2.8rem);
+            font-weight: 900;
+            color: #fff7c8;
+            margin-bottom: 16px;
+            letter-spacing: 0.03em;
+        }
+
+        .quiz-meta {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+            color: rgba(255, 248, 224, 0.86);
+            font-weight: 700;
+        }
+
+        .quiz-form {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .quiz-form input {
+            width: min(180px, 100%);
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 248, 224, 0.28);
+            background: rgba(255, 255, 255, 0.14);
+            color: var(--cream);
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .quiz-form input::placeholder {
+            color: rgba(255, 248, 224, 0.48);
+        }
+
+        .feedback {
+            min-height: 24px;
+            font-weight: 800;
+        }
+
+        .footer-note {
+            color: rgba(23, 50, 29, 0.8);
+            font-weight: 700;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 760px) {
+            body {
+                padding: 12px;
+            }
+
+            .hud {
+                padding: 12px;
+            }
+
+            .stat {
+                flex-basis: calc(50% - 6px);
+            }
+
+            .overlay-panel,
+            .quiz-panel {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-shell">
+        <div class="title-block">
+            <h1>Leprechaun Catch,<br>Leprechaun Catch</h1>
+            <p>Catch the falling gold, dodge the field hazards, and clear the math checkpoints.</p>
+        </div>
+
+        <div class="hud" aria-label="Game HUD">
+            <div class="hud-top">
+                <div class="progress-label">Chase Progress</div>
+                <div class="progress-track" aria-hidden="true">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-percent" id="progress-percent">0%</div>
+            </div>
+            <div class="hud-bottom">
+                <div class="stat">
+                    <span class="stat-label">Score</span>
+                    <span class="stat-value" id="score-stat">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lives</span>
+                    <span class="stat-value" id="lives-stat">3</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Missed Gold</span>
+                    <span class="stat-value" id="missed-stat">0 / 3</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Next Math</span>
+                    <span class="stat-value" id="checkpoint-stat">10 misses</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Quiz Queue</span>
+                    <span class="stat-value" id="queue-stat">1</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-frame">
+            <canvas id="game-canvas" width="960" height="540"></canvas>
+
+            <div class="overlay" id="menu-overlay">
+                <div class="overlay-panel">
+                    <h2>Catch That Gold</h2>
+                    <p>The leprechaun is sprinting ahead with a pot full of gold. Stay behind, grab the coins, and only stop for math when too much treasure gets away.</p>
+                    <div class="controls-note">
+                        <span><strong>Move:</strong> Arrow keys or move your mouse inside the field</span>
+                        <span><strong>Goal:</strong> Catch coins for points. Every 3 missed coins costs 1 life.</span>
+                        <span><strong>Twist:</strong> Math only shows up after every 10 missed coins. Each coin you catch adds one more equation to that math round.</span>
+                        <span><strong>Extra:</strong> Press <strong>F</strong> to toggle fullscreen.</span>
+                    </div>
+                    <div class="button-row">
+                        <button class="primary-btn" id="start-btn">Start Chase</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overlay" id="end-overlay" hidden>
+                <div class="overlay-panel">
+                    <h2 id="end-title">Game Over</h2>
+                    <p id="end-summary">The meadow got the better of you this time.</p>
+                    <div class="controls-note" id="end-stats"></div>
+                    <div class="button-row">
+                        <button class="primary-btn" id="restart-btn">Play Again</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quiz-card" id="quiz-overlay" hidden>
+                <div class="quiz-panel">
+                    <h2 id="quiz-title">Missed 10 Gold</h2>
+                    <p>You let too much treasure slip by. Clear this math stack to keep chasing.</p>
+                    <div class="quiz-meta">
+                        <span id="quiz-remaining">1 question left</span>
+                        <span id="quiz-score-bonus">+15 for each correct</span>
+                    </div>
+                    <div class="question" id="quiz-question">8 + 4 = ?</div>
+                    <form class="quiz-form" id="quiz-form">
+                        <input id="quiz-input" type="number" inputmode="numeric" placeholder="Answer" autocomplete="off">
+                        <button class="primary-btn" type="submit">Submit</button>
+                    </form>
+                    <div class="feedback" id="quiz-feedback"></div>
+                    <div class="button-row">
+                        <button class="secondary-btn" id="quiz-skip-btn" type="button">Take The Hit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-note">Playable with keyboard or mouse. The game also exposes deterministic test hooks for browser automation.</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        const progressFill = document.getElementById('progress-fill');
+        const progressPercent = document.getElementById('progress-percent');
+        const scoreStat = document.getElementById('score-stat');
+        const livesStat = document.getElementById('lives-stat');
+        const missedStat = document.getElementById('missed-stat');
+        const checkpointStat = document.getElementById('checkpoint-stat');
+        const queueStat = document.getElementById('queue-stat');
+
+        const menuOverlay = document.getElementById('menu-overlay');
+        const endOverlay = document.getElementById('end-overlay');
+        const endTitle = document.getElementById('end-title');
+        const endSummary = document.getElementById('end-summary');
+        const endStats = document.getElementById('end-stats');
+        const quizOverlay = document.getElementById('quiz-overlay');
+        const quizTitle = document.getElementById('quiz-title');
+        const quizQuestion = document.getElementById('quiz-question');
+        const quizRemaining = document.getElementById('quiz-remaining');
+        const quizFeedback = document.getElementById('quiz-feedback');
+        const quizInput = document.getElementById('quiz-input');
+        const quizForm = document.getElementById('quiz-form');
+
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizSkipBtn = document.getElementById('quiz-skip-btn');
+
+        const VIEW = { width: 960, height: 540 };
+        const FIELD_TOP = 120;
+        const FIELD_BOTTOM = 494;
+        const FIELD_LEFT = 70;
+        const FIELD_RIGHT = 890;
+
+        const keys = {
+            left: false,
+            right: false,
+            up: false,
+            down: false
+        };
+
+        let animationFrame = 0;
+        let previousTimestamp = 0;
+
+        function createInitialState() {
+            return {
+                mode: 'menu',
+                time: 0,
+                progress: 0,
+                score: 0,
+                lives: 3,
+                missedGold: 0,
+                totalMissedGold: 0,
+                totalCaught: 0,
+                checkpointCaught: 0,
+                completedCheckpoints: 0,
+                nextQuizAtMisses: 10,
+                obstacleTimer: 1.1,
+                goldTimer: 0.6,
+                backgroundScroll: 0,
+                horizonDrift: 0,
+                statusPulse: 0,
+                player: {
+                    x: 190,
+                    y: 400,
+                    w: 56,
+                    h: 72,
+                    speed: 355,
+                    targetX: 190,
+                    targetY: 400,
+                    mouseGuide: 0,
+                    stun: 0,
+                    flash: 0
+                },
+                leprechaun: {
+                    x: 736,
+                    y: 228,
+                    bob: 0,
+                    stride: 0
+                },
+                coins: [],
+                obstacles: [],
+                popups: [],
+                quiz: {
+                    checkpoint: 0,
+                    remaining: 0,
+                    total: 0,
+                    current: null,
+                    feedback: ''
+                }
+            };
+        }
+
+        let state = createInitialState();
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function rand(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function resetGame() {
+            state = createInitialState();
+            menuOverlay.hidden = false;
+            endOverlay.hidden = true;
+            quizOverlay.hidden = true;
+            quizInput.value = '';
+            syncHud();
+            render();
+        }
+
+        function startGame() {
+            state = createInitialState();
+            state.mode = 'playing';
+            menuOverlay.hidden = true;
+            endOverlay.hidden = true;
+            quizOverlay.hidden = true;
+            quizInput.value = '';
+            syncHud();
+            render();
+        }
+
+        function gameOver(win) {
+            state.mode = win ? 'win' : 'gameover';
+            endOverlay.hidden = false;
+            quizOverlay.hidden = true;
+            endTitle.textContent = win ? 'You Caught The Fortune' : 'Chase Over';
+            endSummary.textContent = win
+                ? 'You kept pace, survived the math rounds, and hauled in the leprechaun gold.'
+                : 'Too much gold slipped away or the quiz penalties wore out your luck.';
+            endStats.innerHTML = [
+                `<span><strong>Final score:</strong> ${state.score}</span>`,
+                `<span><strong>Coins caught:</strong> ${state.totalCaught}</span>`,
+                `<span><strong>Math rounds cleared:</strong> ${state.completedCheckpoints}</span>`
+            ].join('');
+            syncHud();
+            render();
+        }
+
+        function spawnCoin() {
+            const launchX = state.leprechaun.x - 8;
+            const launchY = state.leprechaun.y + 28;
+            state.coins.push({
+                x: launchX,
+                y: launchY,
+                vx: rand(-185, -120),
+                vy: rand(-55, 12),
+                r: rand(10, 14),
+                spin: rand(0, Math.PI * 2),
+                spinSpeed: rand(4.5, 7.5),
+                shimmer: rand(0, Math.PI * 2)
+            });
+        }
+
+        function spawnObstacle() {
+            const typeRoll = Math.random();
+            if (typeRoll < 0.34) {
+                state.obstacles.push({
+                    type: 'rock',
+                    x: VIEW.width + 48,
+                    y: rand(350, 460),
+                    w: 54,
+                    h: 40,
+                    speed: rand(215, 260)
+                });
+                return;
+            }
+
+            if (typeRoll < 0.68) {
+                state.obstacles.push({
+                    type: 'stump',
+                    x: VIEW.width + 60,
+                    y: rand(342, 450),
+                    w: 56,
+                    h: 56,
+                    speed: rand(228, 280)
+                });
+                return;
+            }
+
+            state.obstacles.push({
+                type: 'puddle',
+                x: VIEW.width + 82,
+                y: rand(372, 470),
+                w: 76,
+                h: 28,
+                speed: rand(205, 245)
+            });
+        }
+
+        function addPopup(text, x, y, color) {
+            state.popups.push({
+                text,
+                x,
+                y,
+                life: 0.9,
+                color
+            });
+        }
+
+        function loseGold() {
+            state.missedGold += 1;
+            state.totalMissedGold += 1;
+            addPopup('Missed!', 150, 128, '#ffe6b8');
+            if (state.missedGold >= 3) {
+                state.missedGold = 0;
+                state.lives -= 1;
+                addPopup('-1 life', 168, 158, '#ff8c72');
+                if (state.lives <= 0) {
+                    gameOver(false);
+                }
+            }
+        }
+
+        function obstaclePenalty(obstacle) {
+            state.player.stun = obstacle.type === 'puddle' ? 0.55 : 0.82;
+            state.player.flash = 0.28;
+            state.player.x = clamp(state.player.x - 28, FIELD_LEFT, FIELD_RIGHT - state.player.w);
+            state.score = Math.max(0, state.score - 5);
+            addPopup(obstacle.type === 'puddle' ? 'Slowed!' : 'Bonk!', state.player.x + 22, state.player.y - 12, '#ffb86d');
+        }
+
+        function rectsOverlap(a, b) {
+            return a.x < b.x + b.w &&
+                a.x + a.w > b.x &&
+                a.y < b.y + b.h &&
+                a.y + a.h > b.y;
+        }
+
+        function circleRectOverlap(circle, rect) {
+            const nearestX = clamp(circle.x, rect.x, rect.x + rect.w);
+            const nearestY = clamp(circle.y, rect.y, rect.y + rect.h);
+            const dx = circle.x - nearestX;
+            const dy = circle.y - nearestY;
+            return dx * dx + dy * dy <= circle.r * circle.r;
+        }
+
+        function getPlayerRect() {
+            return {
+                x: state.player.x + 6,
+                y: state.player.y + 12,
+                w: state.player.w - 12,
+                h: state.player.h - 14
+            };
+        }
+
+        function getQuestionCount() {
+            return 1 + state.checkpointCaught;
+        }
+
+        function buildQuestion() {
+            const difficulty = Math.max(1, 1 + Math.floor(state.completedCheckpoints / 2));
+            const modeRoll = Math.random();
+
+            if (difficulty >= 3 && modeRoll > 0.66) {
+                const a = Math.floor(rand(2, 8));
+                const b = Math.floor(rand(2, 6 + difficulty));
+                return { prompt: `${a} x ${b} = ?`, answer: a * b };
+            }
+
+            if (modeRoll > 0.4) {
+                const a = Math.floor(rand(8, 18 + difficulty * 5));
+                const b = Math.floor(rand(2, 9 + difficulty * 3));
+                return { prompt: `${a} + ${b} = ?`, answer: a + b };
+            }
+
+            const a = Math.floor(rand(10, 22 + difficulty * 4));
+            const b = Math.floor(rand(2, a - 1));
+            return { prompt: `${a} - ${b} = ?`, answer: a - b };
+        }
+
+        function showQuiz(checkpoint) {
+            state.mode = 'quiz';
+            state.quiz.checkpoint = checkpoint;
+            state.quiz.total = getQuestionCount();
+            state.quiz.remaining = state.quiz.total;
+            state.quiz.current = buildQuestion();
+            state.quiz.feedback = '';
+            quizTitle.textContent = `Missed ${checkpoint} Gold`;
+            quizOverlay.hidden = false;
+            updateQuizUi();
+            requestAnimationFrame(() => quizInput.focus());
+        }
+
+        function updateQuizUi() {
+            const count = state.quiz.remaining;
+            quizQuestion.textContent = state.quiz.current ? state.quiz.current.prompt : '';
+            quizRemaining.textContent = `${count} ${count === 1 ? 'question' : 'questions'} left`;
+            quizFeedback.textContent = state.quiz.feedback;
+            quizFeedback.style.color = state.quiz.feedback.includes('Wrong') || state.quiz.feedback.includes('Lost')
+                ? '#ff9f90'
+                : '#b7ffb3';
+            queueStat.textContent = String(state.mode === 'quiz' ? state.quiz.remaining : getQuestionCount());
+        }
+
+        function completeQuizQuestion(correct) {
+            if (correct) {
+                state.score += 15;
+                state.quiz.feedback = 'Correct! +15 points';
+            } else {
+                state.lives -= 1;
+                state.quiz.feedback = 'Wrong answer. Lost 1 life.';
+                if (state.lives <= 0) {
+                    updateQuizUi();
+                    syncHud();
+                    gameOver(false);
+                    return;
+                }
+            }
+
+            state.quiz.remaining -= 1;
+            if (state.quiz.remaining <= 0) {
+                state.completedCheckpoints += 1;
+                state.nextQuizAtMisses += 10;
+                state.checkpointCaught = 0;
+                state.mode = 'playing';
+                state.quiz.feedback = '';
+                quizOverlay.hidden = true;
+                quizInput.value = '';
+                if (state.progress >= 100) {
+                    gameOver(true);
+                    return;
+                }
+            } else {
+                state.quiz.current = buildQuestion();
+                quizInput.value = '';
+                requestAnimationFrame(() => quizInput.focus());
+            }
+
+            updateQuizUi();
+            syncHud();
+            render();
+        }
+
+        function submitQuizAnswer(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            if (state.mode !== 'quiz' || !state.quiz.current) {
+                return;
+            }
+
+            const value = Number(quizInput.value);
+            if (!Number.isFinite(value)) {
+                state.quiz.feedback = 'Type a number first.';
+                updateQuizUi();
+                return;
+            }
+
+            completeQuizQuestion(value === state.quiz.current.answer);
+        }
+
+        function syncHud() {
+            const roundedProgress = Math.round(state.progress);
+            progressFill.style.width = `${roundedProgress}%`;
+            progressPercent.textContent = `${roundedProgress}%`;
+            scoreStat.textContent = String(state.score);
+            livesStat.textContent = String(state.lives);
+            missedStat.textContent = `${state.missedGold} / 3`;
+            checkpointStat.textContent = `${Math.max(0, state.nextQuizAtMisses - state.totalMissedGold)} misses`;
+            queueStat.textContent = String(state.mode === 'quiz' ? state.quiz.remaining : getQuestionCount());
+        }
+
+        function updatePlayer(dt) {
+            const player = state.player;
+            player.flash = Math.max(0, player.flash - dt);
+
+            if (player.stun > 0) {
+                player.stun = Math.max(0, player.stun - dt);
+                player.y = clamp(player.y + Math.sin(state.time * 28) * 0.5, FIELD_TOP + 150, FIELD_BOTTOM - player.h);
+                return;
+            }
+
+            let moveX = 0;
+            let moveY = 0;
+            if (keys.left) moveX -= 1;
+            if (keys.right) moveX += 1;
+            if (keys.up) moveY -= 1;
+            if (keys.down) moveY += 1;
+
+            const usingMouse = player.mouseGuide > 0 && moveX === 0 && moveY === 0;
+            if (usingMouse) {
+                const dx = player.targetX - player.x;
+                const dy = player.targetY - player.y;
+                player.x += dx * Math.min(1, dt * 7.5);
+                player.y += dy * Math.min(1, dt * 7.5);
+                player.mouseGuide = Math.max(0, player.mouseGuide - dt);
+            } else {
+                const magnitude = Math.hypot(moveX, moveY) || 1;
+                player.x += (moveX / magnitude) * player.speed * dt;
+                player.y += (moveY / magnitude) * player.speed * dt;
+            }
+
+            player.x = clamp(player.x, FIELD_LEFT, FIELD_RIGHT - player.w);
+            player.y = clamp(player.y, FIELD_TOP + 150, FIELD_BOTTOM - player.h);
+        }
+
+        function updatePlayState(dt) {
+            state.progress = clamp(state.progress + dt * 3.8, 0, 100);
+            state.backgroundScroll += dt * 180;
+            state.horizonDrift += dt * 16;
+            state.statusPulse += dt;
+
+            state.leprechaun.bob += dt * 4.2;
+            state.leprechaun.stride += dt * 13;
+            state.leprechaun.x = 742 + Math.sin(state.time * 1.55) * 46;
+            state.leprechaun.y = 223 + Math.sin(state.leprechaun.bob) * 12;
+
+            updatePlayer(dt);
+
+            state.goldTimer -= dt;
+            if (state.goldTimer <= 0) {
+                spawnCoin();
+                const paceBonus = state.progress / 100;
+                state.goldTimer = rand(0.75, 1.22) - paceBonus * 0.18;
+            }
+
+            state.obstacleTimer -= dt;
+            if (state.obstacleTimer <= 0) {
+                spawnObstacle();
+                state.obstacleTimer = rand(0.95, 1.6) - state.progress / 220;
+            }
+
+            const playerRect = getPlayerRect();
+
+            state.coins = state.coins.filter((coin) => {
+                coin.x += coin.vx * dt;
+                coin.y += coin.vy * dt;
+                coin.vy += 320 * dt;
+                coin.spin += coin.spinSpeed * dt;
+                coin.shimmer += dt * 8;
+
+                if (circleRectOverlap(coin, playerRect)) {
+                    state.score += 10;
+                    state.totalCaught += 1;
+                    state.checkpointCaught += 1;
+                    addPopup('+10', coin.x - 8, coin.y - 10, '#fff0a8');
+                    return false;
+                }
+
+                if (coin.y > VIEW.height + 40 || coin.x < -40) {
+                    loseGold();
+                    return false;
+                }
+
+                return true;
+            });
+
+            state.obstacles = state.obstacles.filter((obstacle) => {
+                obstacle.x -= obstacle.speed * dt;
+                const obstacleRect = {
+                    x: obstacle.x,
+                    y: obstacle.y,
+                    w: obstacle.w,
+                    h: obstacle.h
+                };
+
+                if (!obstacle.hit && rectsOverlap(playerRect, obstacleRect)) {
+                    obstacle.hit = true;
+                    obstaclePenalty(obstacle);
+                }
+
+                return obstacle.x + obstacle.w > -80;
+            });
+
+            state.popups = state.popups.filter((popup) => {
+                popup.life -= dt;
+                popup.y -= 28 * dt;
+                return popup.life > 0;
+            });
+
+            if (state.mode === 'playing' && state.totalMissedGold >= state.nextQuizAtMisses) {
+                showQuiz(state.nextQuizAtMisses);
+            }
+
+            if (state.progress >= 100 && state.mode === 'playing') {
+                gameOver(true);
+            }
+        }
+
+        function update(dt) {
+            const cappedDt = Math.min(dt, 1 / 24);
+            state.time += cappedDt;
+
+            if (state.mode === 'playing') {
+                updatePlayState(cappedDt);
+            } else {
+                state.backgroundScroll += cappedDt * 90;
+                state.horizonDrift += cappedDt * 10;
+                state.leprechaun.bob += cappedDt * 2.2;
+                state.leprechaun.stride += cappedDt * 7;
+                state.leprechaun.x = 742 + Math.sin(state.time * 1.2) * 30;
+                state.leprechaun.y = 223 + Math.sin(state.leprechaun.bob) * 9;
+            }
+
+            syncHud();
+        }
+
+        function drawCloud(x, y, scale) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.78)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 22, 0, Math.PI * 2);
+            ctx.arc(18, -8, 18, 0, Math.PI * 2);
+            ctx.arc(36, 0, 20, 0, Math.PI * 2);
+            ctx.arc(14, 10, 18, 0, Math.PI * 2);
+            ctx.arc(30, 10, 16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawBackground() {
+            const sky = ctx.createLinearGradient(0, 0, 0, VIEW.height);
+            sky.addColorStop(0, '#c7efff');
+            sky.addColorStop(0.48, '#9ddf9f');
+            sky.addColorStop(1, '#3f7f36');
+            ctx.fillStyle = sky;
+            ctx.fillRect(0, 0, VIEW.width, VIEW.height);
+
+            const sun = ctx.createRadialGradient(165, 104, 10, 165, 104, 75);
+            sun.addColorStop(0, 'rgba(255, 250, 200, 0.95)');
+            sun.addColorStop(1, 'rgba(255, 250, 200, 0)');
+            ctx.fillStyle = sun;
+            ctx.beginPath();
+            ctx.arc(165, 104, 75, 0, Math.PI * 2);
+            ctx.fill();
+
+            drawCloud(118 + (state.horizonDrift % 960), 92, 1.06);
+            drawCloud(392 + ((state.horizonDrift * 0.7) % 980), 70, 0.82);
+            drawCloud(702 + ((state.horizonDrift * 0.45) % 1020), 112, 0.95);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.arc(620, 310, 230, Math.PI * 1.15, Math.PI * 1.88);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(255, 115, 88, 0.22)';
+            ctx.beginPath();
+            ctx.arc(620, 310, 225, Math.PI * 1.15, Math.PI * 1.88);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(255, 211, 92, 0.22)';
+            ctx.beginPath();
+            ctx.arc(620, 310, 220, Math.PI * 1.15, Math.PI * 1.88);
+            ctx.stroke();
+
+            ctx.fillStyle = '#7cc36b';
+            ctx.beginPath();
+            ctx.moveTo(0, 276);
+            ctx.bezierCurveTo(110, 196, 200, 210, 314, 284);
+            ctx.bezierCurveTo(455, 164, 602, 162, 772, 286);
+            ctx.bezierCurveTo(838, 246, 900, 244, 960, 274);
+            ctx.lineTo(960, 540);
+            ctx.lineTo(0, 540);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#539a44';
+            ctx.beginPath();
+            ctx.moveTo(0, 332);
+            ctx.bezierCurveTo(164, 286, 316, 324, 470, 360);
+            ctx.bezierCurveTo(642, 306, 774, 298, 960, 354);
+            ctx.lineTo(960, 540);
+            ctx.lineTo(0, 540);
+            ctx.closePath();
+            ctx.fill();
+
+            const stripeOffset = state.backgroundScroll % 120;
+            for (let i = -1; i < 10; i += 1) {
+                const x = i * 120 - stripeOffset;
+                ctx.fillStyle = i % 2 === 0 ? 'rgba(73, 149, 53, 0.72)' : 'rgba(93, 177, 61, 0.66)';
+                ctx.beginPath();
+                ctx.moveTo(x, 540);
+                ctx.lineTo(x + 94, 540);
+                ctx.lineTo(x + 156, 330);
+                ctx.lineTo(x + 56, 330);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            for (let i = 0; i < 18; i += 1) {
+                const x = (i * 63 + state.backgroundScroll * 0.35) % 1080 - 60;
+                const sway = Math.sin((state.time * 3.1) + i) * 4;
+                const y = 424 + (i % 5) * 18;
+                ctx.strokeStyle = 'rgba(38, 97, 28, 0.82)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x, y + 18);
+                ctx.lineTo(x + sway, y - 10);
+                ctx.stroke();
+                ctx.fillStyle = i % 3 === 0 ? '#fff6bf' : i % 3 === 1 ? '#fefefe' : '#ffdc79';
+                ctx.beginPath();
+                ctx.arc(x + sway + 4, y - 13, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.fillRect(0, 0, VIEW.width, 70);
+        }
+
+        function drawHudInCanvas() {
+            ctx.fillStyle = 'rgba(10, 42, 18, 0.58)';
+            ctx.fillRect(18, 18, VIEW.width - 36, 62);
+            ctx.strokeStyle = 'rgba(255, 241, 188, 0.35)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(18, 18, VIEW.width - 36, 62);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+            ctx.fillRect(220, 36, 500, 16);
+            ctx.fillStyle = '#f6c84a';
+            ctx.fillRect(220, 36, 5 * state.progress, 16);
+
+            ctx.fillStyle = '#fff7d7';
+            ctx.font = '700 18px Trebuchet MS';
+            ctx.fillText('PROGRESS', 80, 49);
+            ctx.fillText(`${Math.round(state.progress)}%`, 740, 49);
+
+            ctx.font = '700 15px Trebuchet MS';
+            ctx.fillText(`SCORE ${state.score}`, 82, 70);
+            ctx.fillText(`LIVES ${state.lives}`, 242, 70);
+            ctx.fillText(`MISSED ${state.missedGold}/3`, 370, 70);
+            ctx.fillText(`NEXT MATH ${Math.max(0, state.nextQuizAtMisses - state.totalMissedGold)} MISSES`, 500, 70);
+            ctx.fillText(`QUIZ ${state.mode === 'quiz' ? state.quiz.remaining : getQuestionCount()}`, 770, 70);
+        }
+
+        function drawLeprechaun() {
+            const { x, y, stride } = state.leprechaun;
+            const run = Math.sin(stride);
+            const legSwing = run * 10;
+            const armSwing = Math.cos(stride) * 8;
+            const bob = Math.sin(state.time * 8) * 2;
+
+            ctx.save();
+            ctx.translate(x, y + bob);
+
+            ctx.fillStyle = 'rgba(21, 50, 16, 0.22)';
+            ctx.beginPath();
+            ctx.ellipse(14, 48, 58, 16, -0.08, 0, Math.PI * 2);
+            ctx.fill();
+
+            const potGradient = ctx.createLinearGradient(14, -28, 58, 26);
+            potGradient.addColorStop(0, '#5b4332');
+            potGradient.addColorStop(0.5, '#231813');
+            potGradient.addColorStop(1, '#100a07');
+            ctx.fillStyle = potGradient;
+            ctx.beginPath();
+            ctx.ellipse(38, -2, 30, 27, 0.18, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#8f6c49';
+            ctx.beginPath();
+            ctx.ellipse(36, -20, 22, 7, 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ccb18d';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.strokeStyle = '#4f3b2c';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(14, -4, 12, Math.PI * 0.82, Math.PI * 1.74);
+            ctx.arc(61, -4, 11, Math.PI * 1.3, Math.PI * 0.2, true);
+            ctx.stroke();
+
+            for (let i = 0; i < 9; i += 1) {
+                const goldX = 12 + i * 6;
+                const goldY = -18 - Math.sin(state.time * 4 + i * 0.8) * 2 - (i % 2) * 3;
+                const coinGlow = ctx.createRadialGradient(goldX, goldY, 1, goldX, goldY, 7);
+                coinGlow.addColorStop(0, '#fff5c1');
+                coinGlow.addColorStop(0.55, '#ffd95e');
+                coinGlow.addColorStop(1, '#cf8d14');
+                ctx.fillStyle = coinGlow;
+                ctx.beginPath();
+                ctx.arc(goldX, goldY, 5.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.strokeStyle = '#4a2d17';
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.moveTo(-4, 12);
+            ctx.lineTo(-13, 37 + legSwing);
+            ctx.moveTo(12, 11);
+            ctx.lineTo(18, 39 - legSwing);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#26170c';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(-16, -12);
+            ctx.lineTo(-34, -1 + armSwing * 0.3);
+            ctx.moveTo(18, -15);
+            ctx.lineTo(29, -6 - armSwing * 0.4);
+            ctx.stroke();
+
+            ctx.fillStyle = '#35210f';
+            ctx.beginPath();
+            ctx.ellipse(-15, 39 + legSwing, 9, 4.5, -0.25, 0, Math.PI * 2);
+            ctx.ellipse(22, 41 - legSwing, 9, 4.5, 0.15, 0, Math.PI * 2);
+            ctx.fill();
+
+            const coatGradient = ctx.createLinearGradient(-18, -48, 20, 14);
+            coatGradient.addColorStop(0, '#3db263');
+            coatGradient.addColorStop(0.45, '#1f7d43');
+            coatGradient.addColorStop(1, '#0f4f2b');
+            ctx.fillStyle = coatGradient;
+            ctx.beginPath();
+            ctx.roundRect(-20, -38, 40, 50, 12);
+            ctx.fill();
+
+            ctx.fillStyle = '#145d32';
+            ctx.beginPath();
+            ctx.moveTo(-4, -24);
+            ctx.lineTo(4, -24);
+            ctx.lineTo(12, 10);
+            ctx.lineTo(-12, 10);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#d89a35';
+            ctx.fillRect(-18, -1, 36, 7);
+            ctx.fillStyle = '#ffdc67';
+            ctx.fillRect(-4, -3, 8, 11);
+
+            ctx.fillStyle = '#f4c89d';
+            ctx.beginPath();
+            ctx.ellipse(0, -50, 17, 19, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            const beardGradient = ctx.createLinearGradient(-2, -34, 5, -8);
+            beardGradient.addColorStop(0, '#ffcc72');
+            beardGradient.addColorStop(0.55, '#ff9941');
+            beardGradient.addColorStop(1, '#bb4f18');
+            ctx.fillStyle = beardGradient;
+            ctx.beginPath();
+            ctx.moveTo(-14, -38);
+            ctx.quadraticCurveTo(-22, -25, -14, -8);
+            ctx.quadraticCurveTo(0, 7, 15, -7);
+            ctx.quadraticCurveTo(23, -24, 12, -38);
+            ctx.quadraticCurveTo(0, -24, -14, -38);
+            ctx.fill();
+
+            ctx.fillStyle = '#f2b487';
+            ctx.beginPath();
+            ctx.arc(0, -45, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#172814';
+            ctx.beginPath();
+            ctx.arc(-6, -53, 1.7, 0, Math.PI * 2);
+            ctx.arc(5, -53, 1.7, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#8d4d22';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(-0.5, -46, 7, 0.35, Math.PI - 0.35);
+            ctx.stroke();
+
+            ctx.fillStyle = '#2d6d2f';
+            ctx.beginPath();
+            ctx.ellipse(0, -74, 27, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(-15, -92, 30, 22);
+
+            const hatGradient = ctx.createLinearGradient(-15, -92, 18, -64);
+            hatGradient.addColorStop(0, '#4eb764');
+            hatGradient.addColorStop(0.55, '#207240');
+            hatGradient.addColorStop(1, '#114828');
+            ctx.fillStyle = hatGradient;
+            ctx.beginPath();
+            ctx.moveTo(-15, -92);
+            ctx.lineTo(8, -92);
+            ctx.lineTo(14, -70);
+            ctx.lineTo(-15, -70);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#15361b';
+            ctx.fillRect(-17, -72, 34, 8);
+            ctx.fillStyle = '#ffd95e';
+            ctx.fillRect(-5, -75, 10, 10);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(-11, -84);
+            ctx.lineTo(6, -88);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 247, 173, 0.24)';
+            ctx.beginPath();
+            ctx.ellipse(8, -83, 6, 15, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            for (let i = 0; i < 3; i += 1) {
+                const sparkleX = 58 + i * 10;
+                const sparkleY = -28 + Math.sin(state.time * 5 + i) * 3;
+                ctx.strokeStyle = 'rgba(255, 245, 164, 0.75)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(sparkleX - 4, sparkleY);
+                ctx.lineTo(sparkleX + 4, sparkleY);
+                ctx.moveTo(sparkleX, sparkleY - 4);
+                ctx.lineTo(sparkleX, sparkleY + 4);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            const player = state.player;
+            const bounce = Math.sin(state.time * 12) * 2;
+            ctx.save();
+            ctx.translate(player.x, player.y + bounce);
+
+            if (player.flash > 0) {
+                ctx.globalAlpha = 0.65 + Math.sin(state.time * 40) * 0.35;
+            }
+
+            ctx.fillStyle = '#674323';
+            ctx.fillRect(8, 20, 36, 36);
+            ctx.fillStyle = '#f8c89a';
+            ctx.fillRect(12, 0, 28, 28);
+            ctx.fillStyle = '#6c2f12';
+            ctx.beginPath();
+            ctx.arc(26, -2, 18, Math.PI, 0);
+            ctx.fill();
+
+            ctx.fillStyle = '#3d8a38';
+            ctx.fillRect(0, 26, 12, 26);
+            ctx.fillRect(40, 26, 12, 26);
+
+            ctx.strokeStyle = '#402714';
+            ctx.lineWidth = 6;
+            const stride = Math.sin(state.time * 11) * 8;
+            ctx.beginPath();
+            ctx.moveTo(16, 56);
+            ctx.lineTo(12, 74 + stride);
+            ctx.moveTo(36, 56);
+            ctx.lineTo(42, 74 - stride);
+            ctx.moveTo(10, 26);
+            ctx.lineTo(-6, 42 - stride * 0.3);
+            ctx.moveTo(42, 24);
+            ctx.lineTo(58, 34 + stride * 0.3);
+            ctx.stroke();
+
+            ctx.fillStyle = '#9d6d32';
+            ctx.beginPath();
+            ctx.ellipse(60, 48, 24, 18, 0.35, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#f0c978';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(60, 46, 20, 0.1, Math.PI * 1.7);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawCoin(coin) {
+            ctx.save();
+            ctx.translate(coin.x, coin.y);
+            ctx.rotate(Math.sin(coin.spin) * 0.35);
+            ctx.scale(Math.max(0.35, Math.abs(Math.cos(coin.spin))), 1);
+            const glint = 0.6 + Math.sin(coin.shimmer) * 0.2;
+            ctx.fillStyle = `rgba(255, 215, 71, ${glint})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, coin.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff3b0';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawObstacle(obstacle) {
+            if (obstacle.type === 'rock') {
+                ctx.fillStyle = '#8e938d';
+                ctx.beginPath();
+                ctx.ellipse(obstacle.x + obstacle.w / 2, obstacle.y + obstacle.h / 2, obstacle.w / 2, obstacle.h / 2, -0.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#68706b';
+                ctx.beginPath();
+                ctx.ellipse(obstacle.x + obstacle.w / 2 - 8, obstacle.y + obstacle.h / 2 - 4, obstacle.w / 4, obstacle.h / 5, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+                return;
+            }
+
+            if (obstacle.type === 'stump') {
+                ctx.fillStyle = '#7c4d1e';
+                ctx.fillRect(obstacle.x + 12, obstacle.y + 8, obstacle.w - 24, obstacle.h - 12);
+                ctx.fillStyle = '#ae7b45';
+                ctx.beginPath();
+                ctx.ellipse(obstacle.x + obstacle.w / 2, obstacle.y + 10, obstacle.w / 2, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+                return;
+            }
+
+            ctx.fillStyle = 'rgba(74, 144, 226, 0.68)';
+            ctx.beginPath();
+            ctx.ellipse(obstacle.x + obstacle.w / 2, obstacle.y + obstacle.h / 2, obstacle.w / 2, obstacle.h / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(225, 243, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function drawPopups() {
+            ctx.font = '800 18px Trebuchet MS';
+            ctx.textAlign = 'center';
+            state.popups.forEach((popup) => {
+                ctx.globalAlpha = Math.max(0, popup.life);
+                ctx.fillStyle = popup.color;
+                ctx.fillText(popup.text, popup.x, popup.y);
+            });
+            ctx.globalAlpha = 1;
+            ctx.textAlign = 'left';
+        }
+
+        function drawFieldAccent() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.beginPath();
+            ctx.ellipse(480, 520, 360, 38, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (state.player.stun > 0) {
+                ctx.fillStyle = 'rgba(255, 113, 82, 0.16)';
+                ctx.fillRect(0, 0, VIEW.width, VIEW.height);
+            }
+        }
+
+        function drawCanvasPanel(title, lines, accentColor) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(8, 24, 12, 0.72)';
+            ctx.fillRect(0, 0, VIEW.width, VIEW.height);
+
+            const panelWidth = 560;
+            const panelHeight = 220;
+            const panelX = (VIEW.width - panelWidth) / 2;
+            const panelY = (VIEW.height - panelHeight) / 2;
+
+            ctx.fillStyle = 'rgba(12, 43, 19, 0.92)';
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(panelX, panelY, panelWidth, panelHeight, 28);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#fff0a9';
+            ctx.textAlign = 'center';
+            ctx.font = '900 34px Trebuchet MS';
+            ctx.fillText(title, VIEW.width / 2, panelY + 58);
+
+            ctx.fillStyle = '#fff8df';
+            ctx.font = '700 20px Trebuchet MS';
+            lines.forEach((line, index) => {
+                ctx.fillText(line, VIEW.width / 2, panelY + 104 + index * 34);
+            });
+            ctx.textAlign = 'left';
+            ctx.restore();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, VIEW.width, VIEW.height);
+            drawBackground();
+            drawHudInCanvas();
+            drawFieldAccent();
+            state.coins.forEach(drawCoin);
+            state.obstacles.forEach(drawObstacle);
+            drawLeprechaun();
+            drawPlayer();
+            drawPopups();
+
+            if (state.mode === 'quiz') {
+                ctx.fillStyle = 'rgba(10, 22, 12, 0.28)';
+                ctx.fillRect(0, 0, VIEW.width, VIEW.height);
+                drawCanvasPanel(
+                    `Missed ${state.quiz.checkpoint} Gold`,
+                    [
+                        state.quiz.current ? state.quiz.current.prompt : 'Get ready',
+                        `${state.quiz.remaining} ${state.quiz.remaining === 1 ? 'question' : 'questions'} left`,
+                        'Use the answer box or take the hit to continue'
+                    ],
+                    'rgba(255, 231, 141, 0.78)'
+                );
+            } else if (state.mode === 'menu') {
+                drawCanvasPanel(
+                    'Catch That Gold',
+                    [
+                        'Arrow keys or mouse move your catcher',
+                        'Every 3 missed coins costs 1 life',
+                        'Every 10 missed coins opens a math round'
+                    ],
+                    'rgba(160, 255, 156, 0.72)'
+                );
+            } else if (state.mode === 'gameover' || state.mode === 'win') {
+                drawCanvasPanel(
+                    state.mode === 'win' ? 'Fortune Secured' : 'Chase Over',
+                    [
+                        `Score ${state.score}`,
+                        `Coins caught ${state.totalCaught}`,
+                        'Press Play Again to run it back'
+                    ],
+                    state.mode === 'win' ? 'rgba(255, 220, 112, 0.78)' : 'rgba(255, 132, 109, 0.76)'
+                );
+            }
+        }
+
+        function loop(timestamp) {
+            if (!previousTimestamp) {
+                previousTimestamp = timestamp;
+            }
+            const dt = (timestamp - previousTimestamp) / 1000;
+            previousTimestamp = timestamp;
+            update(dt);
+            render();
+            animationFrame = requestAnimationFrame(loop);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+                return;
+            }
+            document.exitFullscreen().catch(() => {});
+        }
+
+        function pointerToField(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = VIEW.width / rect.width;
+            const scaleY = VIEW.height / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') keys.left = true;
+            if (event.key === 'ArrowRight') keys.right = true;
+            if (event.key === 'ArrowUp') keys.up = true;
+            if (event.key === 'ArrowDown') keys.down = true;
+
+            if (event.key === 'f' || event.key === 'F') {
+                toggleFullscreen();
+            }
+
+            if (event.key === 'Enter' && state.mode === 'menu') {
+                startGame();
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (event.key === 'ArrowLeft') keys.left = false;
+            if (event.key === 'ArrowRight') keys.right = false;
+            if (event.key === 'ArrowUp') keys.up = false;
+            if (event.key === 'ArrowDown') keys.down = false;
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            const point = pointerToField(event.clientX, event.clientY);
+            state.player.targetX = clamp(point.x - state.player.w / 2, FIELD_LEFT, FIELD_RIGHT - state.player.w);
+            state.player.targetY = clamp(point.y - state.player.h / 2, FIELD_TOP + 150, FIELD_BOTTOM - state.player.h);
+            state.player.mouseGuide = 0.9;
+        });
+
+        canvas.addEventListener('mousedown', (event) => {
+            if (state.mode === 'menu') {
+                startGame();
+                return;
+            }
+            const point = pointerToField(event.clientX, event.clientY);
+            state.player.targetX = clamp(point.x - state.player.w / 2, FIELD_LEFT, FIELD_RIGHT - state.player.w);
+            state.player.targetY = clamp(point.y - state.player.h / 2, FIELD_TOP + 150, FIELD_BOTTOM - state.player.h);
+            state.player.mouseGuide = 1.2;
+        });
+
+        canvas.addEventListener('touchstart', (event) => {
+            const touch = event.touches[0];
+            if (!touch) return;
+            const point = pointerToField(touch.clientX, touch.clientY);
+            state.player.targetX = clamp(point.x - state.player.w / 2, FIELD_LEFT, FIELD_RIGHT - state.player.w);
+            state.player.targetY = clamp(point.y - state.player.h / 2, FIELD_TOP + 150, FIELD_BOTTOM - state.player.h);
+            state.player.mouseGuide = 1.2;
+            event.preventDefault();
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (event) => {
+            const touch = event.touches[0];
+            if (!touch) return;
+            const point = pointerToField(touch.clientX, touch.clientY);
+            state.player.targetX = clamp(point.x - state.player.w / 2, FIELD_LEFT, FIELD_RIGHT - state.player.w);
+            state.player.targetY = clamp(point.y - state.player.h / 2, FIELD_TOP + 150, FIELD_BOTTOM - state.player.h);
+            state.player.mouseGuide = 1.2;
+            event.preventDefault();
+        }, { passive: false });
+
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+        quizForm.addEventListener('submit', submitQuizAnswer);
+        quizSkipBtn.addEventListener('click', () => {
+            if (state.mode === 'quiz') {
+                completeQuizQuestion(false);
+            }
+        });
+
+        window.render_game_to_text = () => JSON.stringify({
+            coordinateSystem: 'origin at top-left; x increases right; y increases downward',
+            mode: state.mode,
+            progress: Number(state.progress.toFixed(1)),
+            score: state.score,
+            lives: state.lives,
+            missedGold: state.missedGold,
+            totalMissedGold: state.totalMissedGold,
+            checkpoint: state.completedCheckpoints,
+            nextQuizAtMisses: state.nextQuizAtMisses,
+            queuedQuestions: state.mode === 'quiz' ? state.quiz.remaining : getQuestionCount(),
+            player: {
+                x: Number(state.player.x.toFixed(1)),
+                y: Number(state.player.y.toFixed(1)),
+                stun: Number(state.player.stun.toFixed(2))
+            },
+            leprechaun: {
+                x: Number(state.leprechaun.x.toFixed(1)),
+                y: Number(state.leprechaun.y.toFixed(1))
+            },
+            coins: state.coins.slice(0, 8).map((coin) => ({
+                x: Number(coin.x.toFixed(1)),
+                y: Number(coin.y.toFixed(1)),
+                r: Number(coin.r.toFixed(1))
+            })),
+            obstacles: state.obstacles.slice(0, 6).map((obstacle) => ({
+                type: obstacle.type,
+                x: Number(obstacle.x.toFixed(1)),
+                y: Number(obstacle.y.toFixed(1)),
+                w: obstacle.w,
+                h: obstacle.h
+            })),
+            quiz: state.mode === 'quiz' ? {
+                checkpoint: state.quiz.checkpoint,
+                remaining: state.quiz.remaining,
+                prompt: state.quiz.current ? state.quiz.current.prompt : null
+            } : null
+        });
+
+        window.advanceTime = (ms) => {
+            const steps = Math.max(1, Math.round(ms / (1000 / 60)));
+            for (let i = 0; i < steps; i += 1) {
+                update(ms / 1000 / steps);
+            }
+            render();
+        };
+
+        resetGame();
+        animationFrame = requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
