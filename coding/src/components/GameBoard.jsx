@@ -13,8 +13,8 @@ export default function GameBoard({ level, game }) {
     const ctx = canvas.current.getContext('2d');
     const background = new Image();
     const sprites = new Image();
-    background.src = '/assets/jungle.png';
-    sprites.src = '/assets/sprites.png';
+    background.src = `${import.meta.env.BASE_URL}assets/jungle.png`;
+    sprites.src = `${import.meta.env.BASE_URL}assets/sprites.png`;
     let frame;
     let animation = { start: 0, from: 0, to: 0, jumping: false };
     function draw(now) {

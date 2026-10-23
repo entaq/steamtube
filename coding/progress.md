@@ -59,3 +59,18 @@ User requested more advanced levels and a custom Christmas song function.
 - Main localhost:5173 project reloaded and its preexisting program compared equal. Left Level 10 selected with its original unsolved starter and christmas JavaScript visible. All original saved programs/functions are retained. Screenshot evidence outside repository: /tmp/monkeyscript-advanced-desktop.png and /tmp/monkeyscript-advanced-mobile.png. Browser QA uses cua_repl because the current browser-control rules require it; the standalone Playwright client was not used.
 - No required work remains after final unit/worker and production-build verification. Optional: invent another song by copying the christmas recipe, or add new path/rock patterns in levels.js.
 - Final verification after all changes: npm test 58/58 passing; npm run build successful. Isolated QA server stopped; original localhost:5173 preview kept running.
+
+
+## Static deployment under SteamTube /coding/ — 2026-10-22
+
+User moved the source to /Users/arun.nagarajan/dev/steamtube/coding and reported a blank static-hosted app.
+
+- Confirmed live https://steamtube.fun/coding returns unbuilt index.html referencing /src/main.jsx; that script URL returns 404. Live response headers identify Vercel. The parent SteamTube repo had no build script/configuration and published raw sources.
+- Reproduced the second issue with an actual production build mounted at /coding/ on a plain Python static server: JS/CSS/fonts loaded, but /assets/jungle.png and /assets/sprites.png returned 404 and the canvas showed no sprites/background. Baseline screenshot: /tmp/monkeyscript-static-before.png.
+- Set coding/vite.config.js base to /coding/. GameBoard now loads both public images through import.meta.env.BASE_URL, also supporting --base=/ when hosting this app alone.
+- Added parent package.json build/test scripts, scripts/build-site.mjs, and vercel.json. Root npm run build installs the app's locked dev dependencies, runs Vite, then generates parent dist/: all 11 existing standalone HTML games stay at their original paths and the compiled app goes in dist/coding/. Vercel uses framework null, buildCommand npm run build, outputDirectory dist. Keep Vercel Root Directory at the SteamTube repo root. Generated parent dist/ is ignored; app source index remains the normal Vite build entry point.
+- Updated parent/app READMEs with build, deployment, standalone-base override, and plain static preview instructions.
+- Final verification: root npm run build succeeded, npm test passed 58/58, git diff --check passed. All 11 copied game pages are byte-identical to their source files. HTTP checks returned 200 for both /coding forms, both PNGs, the compiled app JS and worker, and all 11 root games. Source/node_modules are absent from the generated site.
+- Browser at http://127.0.0.1:55139/coding/ uses only Python http.server, with no Vite dev server. After reload, jungle, monkey, banana and rocks rendered; running the unedited first-level program at 4x reached stone 11 and Sweet success. Console warnings/errors: none. Final screenshot /tmp/monkeyscript-static-working.png.
+- Static preview server retained as session 71843, serving /Users/arun.nagarajan/dev/steamtube/dist on port 55139. Its browser tab is the deliverable. The temporary baseline server was stopped. Existing localhost:5173 tab was not edited.
+- No commit, push or remote deployment was performed. Source/configuration changes are ready for the user's next commit and Vercel deployment; live steamtube.fun is still the previous deployment until then.

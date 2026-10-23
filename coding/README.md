@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Open the local address shown in the terminal (usually http://localhost:5173). Everything runs in your browser. There are no accounts or API keys. Fonts, jungle art, and sprites are included locally.
+Open the local address shown in the terminal (usually http://localhost:5173/coding/). Everything runs in your browser. There are no accounts or API keys. Fonts, jungle art, and sprites are included locally.
 
 ## Play
 
@@ -170,6 +170,12 @@ First, use existing actions to invent a `dance` command that plays three notes, 
 Programs, command functions, renamed words, completed levels, and the selected level save on this device in browser storage. Click the **M** avatar to **Download project** as a JSON file or **Load project** on another device. A downloaded project includes the custom language, so a brother or friend can use the same words.
 
 Keep a downloaded copy of experiments you care about. Loading a project replaces the project currently open in the playground.
+
+## Static hosting at /coding/
+
+The app defaults to a `/coding/` base path. `npm run build` creates `dist/index.html` and bundled scripts, styles, fonts, worker, and images. Publish the contents of this folder at `/coding/`; the source `index.html` references JSX and is only a Vite build entry point.
+
+For the combined SteamTube site, run `npm run build` from the parent repository and publish its root `dist/` folder. The root Vercel configuration already does this while retaining the other games. For a separate domain hosted at `/`, build this app with `npm run build -- --base=/` instead. Image loading follows the configured base path in both cases.
 
 ## Check and build
 

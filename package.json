@@ -1,5 +1,9 @@
 {
   "dependencies": {
     "playwright": "^1.58.2"
+  },
+  "scripts": {
+    "build": "npm --prefix coding ci --include=dev && npm --prefix coding run build && node scripts/build-site.mjs",
+    "test": "npm --prefix coding test"
   }
 }
